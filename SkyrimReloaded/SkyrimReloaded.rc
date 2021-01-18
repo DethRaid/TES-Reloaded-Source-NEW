@@ -71,7 +71,7 @@ BEGIN
             VALUE "FileDescription", "Skyrim Reloaded"
             VALUE "FileVersion", "4.0.0.0"
             VALUE "InternalName", "SkyrimReloaded.dll"
-            VALUE "LegalCopyright", "Copyright (C) 2020"
+            VALUE "LegalCopyright", "Copyright (C) 2021"
             VALUE "OriginalFilename", "SkyrimReloaded.dll"
             VALUE "ProductName", "Skyrim Reloaded"
             VALUE "ProductVersion", "4.0.0.0"

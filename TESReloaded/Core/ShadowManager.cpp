@@ -508,7 +508,7 @@ void ShadowManager::RenderShadowCubeMap(NiPointLight** Lights, int LightIndex, S
 			}
 		}
 	}
-
+	
 }
 
 void ShadowManager::RenderShadowMaps() {

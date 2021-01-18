@@ -4,6 +4,7 @@
 #define kToggleCamera 0x00950110
 #define kToggleBody 0x00951A10
 #define kSetDialogCamera 0x00953060
+#define kSetAimingZoom 0x0095DE30
 #define kUpdateCameraCollisions 0x0094A0C0
 #define PlayerNode Player->renderData->niNode
 #define ToggleCameraEcx [ebp - 0x18]
@@ -14,13 +15,11 @@ static const UInt32 kSwitchCameraHook = 0x00945C2D;
 static const UInt32 kSwitchCameraReturn = 0x00945C34;
 static const UInt32 kSwitchCameraPOVHook = 0x00942DC5;
 static const UInt32 kSwitchCameraPOVReturn = 0x00942DCE;
-static const UInt32 kThirdPersonAimingHook = 0x0095DFE1;
-static const UInt32 kThirdPersonAimingReturn = 0x0095DFEA;
-static const UInt32 kThirdPersonAimingReturnJ = 0x0095DFF7;
 #elif defined(OBLIVION)
 #define kToggleCamera 0x0066C580
 #define kToggleBody 0x00664F70
 #define kSetDialogCamera 0x0066C6F0
+#define kSetAimingZoom 0x00666670
 #define kUpdateCameraCollisions 0x0065F080
 #define PlayerNode Player->niNode
 #define ToggleCameraEcx ebx
@@ -31,8 +30,6 @@ static const UInt32 kSwitchCameraHook = 0x00671AC9;
 static const UInt32 kSwitchCameraReturn = 0x00671AD0;
 static const UInt32 kSwitchCameraPOVHook = 0x00672FDA;
 static const UInt32 kSwitchCameraPOVReturn = 0x00672FE2;
-static const UInt32 kThirdPersonAimingHook = 0x00666683;
-static const UInt32 kThirdPersonAimingReturn = 0x0066668A;
 #endif
 
 #if defined(OBLIVION) || defined(NEWVEGAS)
@@ -46,6 +43,7 @@ public:
 	void TrackToggleBody(UInt8);
 	void TrackSetDialogCamera(MobileObject*, float, UInt8);
 	void TrackUpdateCameraCollisions(NiPoint3*, NiPoint3*, UInt8);
+	void TrackSetAimingZoom(float);
 };
 
 void (__thiscall CameraMode::* ToggleCamera)(UInt8);
@@ -59,6 +57,7 @@ void CameraMode::TrackToggleCamera(UInt8 FirstPerson) {
 #endif
 	TheRenderManager->FirstPersonView = FirstPerson;
 #if defined(NEWVEGAS)
+	//if (Player->isSpecialView || Player->IsAiming()) { (this->*ToggleCamera)(1); return; }
 	if (Player->isSpecialView) { (this->*ToggleCamera)(1); return; }
 #endif
 	(this->*ToggleCamera)(0);
@@ -71,6 +70,7 @@ void CameraMode::TrackToggleBody(UInt8 FirstPerson) {
 
 #if defined(NEWVEGAS)
 	if (TheSettingManager->GameLoading) Player->unkThirdPersonPrev = Player->unkThirdPerson = Player->isThirdPersonBody = Player->isThirdPerson = 1;
+	//if (Player->isSpecialView || Player->IsAiming()) { (this->*ToggleBody)(1); return; }
 	if (Player->isSpecialView) { (this->*ToggleBody)(1); return; }
 #endif
 	(this->*ToggleBody)(0);
@@ -118,6 +118,17 @@ void CameraMode::TrackUpdateCameraCollisions(NiPoint3* CameraPosition, NiPoint3*
 			else
 				MenuManager->SetCrosshair(0);
 		}
+	}
+
+}
+
+void (__thiscall CameraMode::* SetAimingZoom)(float);
+void (__thiscall CameraMode::* TrackSetAimingZoom)(float);
+void CameraMode::TrackSetAimingZoom(float Arg1) {
+	
+	if (TheRenderManager->FirstPersonView) {
+		//if ((Player->isThirdPerson && Player->IsAiming()) || (!Player->isThirdPerson && !Player->IsAiming())) ThisCall(kToggleCamera, Player, 1);
+		(this->*SetAimingZoom)(Arg1);
 	}
 
 }
@@ -287,24 +298,6 @@ static __declspec(naked) void SwitchCameraPOVHook() {
 
 }
 
-static __declspec(naked) void ThirdPersonAimingHook() {
-
-	__asm {
-		mov		eax, TheRenderManager
-		cmp     byte ptr [eax + RenderManager::FirstPersonView], 1
-#if defined(NEWVEGAS)
-		jz		short loc_continue
-		jmp		kThirdPersonAimingReturnJ
-	loc_continue:
-		mov		ecx, Player
-		call	PlayerCharacter::IsVanityView
-		test	al, al
-#endif
-		jmp		kThirdPersonAimingReturn
-	}
-
-}
-
 #if defined(OBLIVION)
 void SetReticleOffset(NiPoint3* CameraPos) {
 	
@@ -338,6 +331,8 @@ void CreateCameraModeHook() {
 	TrackToggleBody							= &CameraMode::TrackToggleBody;
 	*((int *)&SetDialogCamera)				= kSetDialogCamera;
 	TrackSetDialogCamera					= &CameraMode::TrackSetDialogCamera;
+	*((int *)&SetAimingZoom)				= kSetAimingZoom;
+	TrackSetAimingZoom						= &CameraMode::TrackSetAimingZoom;
 	*((int *)&UpdateCameraCollisions)		= kUpdateCameraCollisions;
 	TrackUpdateCameraCollisions				= &CameraMode::TrackUpdateCameraCollisions;
 
@@ -346,13 +341,13 @@ void CreateCameraModeHook() {
 	DetourAttach(&(PVOID&)ToggleCamera,				*((PVOID*)&TrackToggleCamera));
 	DetourAttach(&(PVOID&)ToggleBody,				*((PVOID*)&TrackToggleBody));
 	DetourAttach(&(PVOID&)SetDialogCamera,			*((PVOID*)&TrackSetDialogCamera));
+	DetourAttach(&(PVOID&)SetAimingZoom,			*((PVOID*)&TrackSetAimingZoom));
 	DetourAttach(&(PVOID&)UpdateCameraCollisions,	*((PVOID*)&TrackUpdateCameraCollisions));
 	DetourTransactionCommit();
 
 	WriteRelJump(kUpdateCameraHook,		 (UInt32)UpdateCameraHook);
 	WriteRelJump(kSwitchCameraHook,		 (UInt32)SwitchCameraHook);
 	WriteRelJump(kSwitchCameraPOVHook,   (UInt32)SwitchCameraPOVHook);
-	WriteRelJump(kThirdPersonAimingHook, (UInt32)ThirdPersonAimingHook);
 #if defined(OBLIVION)
 	WriteRelJump(kSetReticleOffsetHook,  (UInt32)SetReticleOffsetHook);
 	WriteRelJump(0x0066B769, 0x0066B795); // Does not lower the player Z axis value (fixes the bug of the camera on feet after resurrection)

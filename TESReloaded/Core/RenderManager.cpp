@@ -150,9 +150,9 @@ void RenderManager::SetSceneGraph() {
 	float FoV = CameraMode->FoV;
 
 	FirstPersonView = !Player->IsThirdPersonView(CameraMode->Enabled, FirstPersonView);
-	if (FoV && FoV != WorldSceneGraph->cameraFOV && !Player->IsAiming() && MenuManager->IsActive(Menu::MenuType::kMenuType_None)) {
+	if (CameraMode->Enabled) {
 		*SettingNearDistance = 2.5f;
-		Player->SetFoV(WorldSceneGraph, SettingWorldFoV, Setting1stPersonFoV, FoV);
+		if (FoV != WorldSceneGraph->cameraFOV && !Player->IsAiming() && MenuManager->IsActive(Menu::MenuType::kMenuType_None)) Player->SetFoV(WorldSceneGraph, SettingWorldFoV, Setting1stPersonFoV, FoV);
 	}
 	TheShaderManager->ShaderConst.ReciprocalResolution.w = Player->GetFoV(0);
 

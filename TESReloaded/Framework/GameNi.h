@@ -577,7 +577,7 @@ assert(sizeof(NiCamera) == 0x114);
 
 class SceneGraph : public NiNode {
 public:
-	void			SetCameraFOV(float FoV) { ThisCall(0x00C52020, this, FoV, 0 , NULL, 0); }
+	void			SetCameraFOV(float FoV) { ThisCall(0x00C52020, this, FoV, 0, NULL, 0); }
 
 	NiCamera*			camera;					// AC
 	UInt32				unkB0;					// B0
@@ -1971,7 +1971,7 @@ assert(sizeof(NiCamera) == 0x124);
 
 class SceneGraph : public NiNode {
 public:
-	void			SetCameraFOV(float FoV) { ThisCall(0x00411160, this, FoV, 0.0); }
+	void			SetCameraFOV(float FoV) { ThisCall(0x00411160, this, FoV, 0); }
 
 	NiCamera*			camera;					// 0DC
 	UInt32				unk0E0;					// 0E0

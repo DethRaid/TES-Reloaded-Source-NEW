@@ -71,7 +71,7 @@ BEGIN
             VALUE "FileDescription", "New Vegas Reloaded"
             VALUE "FileVersion", "3.3.1.0"
             VALUE "InternalName", "NewVegasReloaded.dll"
-            VALUE "LegalCopyright", "Copyright (C) 2020"
+            VALUE "LegalCopyright", "Copyright (C) 2021"
             VALUE "OriginalFilename", "NewVegasReloaded.dll"
             VALUE "ProductName", "New Vegas Reloaded"
             VALUE "ProductVersion", "3.3.1.0"
