@@ -97,6 +97,8 @@ struct SettingsMainStruct {
 		bool		ChasingThird;
 		UInt8		Crosshair;
 		NiPoint3	Offset;
+		NiPoint3	OneHandAimingOffset;
+		NiPoint3	TwoHandAimingOffset;
 		NiPoint3	DialogOffset;
 		float		FoV;
 	};

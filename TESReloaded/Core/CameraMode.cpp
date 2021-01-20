@@ -215,6 +215,26 @@ void UpdateCamera(NiAVObject* CameraNode, NiPoint3* LocalPosition) {
 	else if (!IsThirdPerson && !Player->IsVanityView()) {
 		if (SitSleepState != 3 && SitSleepState != 5) {
 			NiPoint3 o = { CameraMode->Offset.z, CameraMode->Offset.y, CameraMode->Offset.x };
+			if (Player->IsAiming()) {
+				switch (Player->ActorSkinInfo->WeaponForm->weaponType) {
+					case TESObjectWEAP::WeaponType::kWeapType_OneHandPistol:
+					case TESObjectWEAP::WeaponType::kWeapType_OneHandPistolEnergy:
+						o.x = CameraMode->OneHandAimingOffset.z;
+						o.y = CameraMode->OneHandAimingOffset.y;
+						o.z = CameraMode->OneHandAimingOffset.x;
+					case TESObjectWEAP::WeaponType::kWeapType_TwoHandRifle:
+					case TESObjectWEAP::WeaponType::kWeapType_TwoHandAutomatic:
+					case TESObjectWEAP::WeaponType::kWeapType_TwoHandRifleEnergy:
+					case TESObjectWEAP::WeaponType::kWeapType_TwoHandHandle:
+					case TESObjectWEAP::WeaponType::kWeapType_TwoHandLauncher:
+						o.x = CameraMode->TwoHandAimingOffset.z;
+						o.y = CameraMode->TwoHandAimingOffset.y;
+						o.z = CameraMode->TwoHandAimingOffset.x;
+						break;
+					default:
+						break;
+				}
+			}
 			v = Process->animData->nHead->m_worldTransform.rot * o;
 			CameraPosition->x = HeadPosition->x + v.x;
 			CameraPosition->y = HeadPosition->y + v.y;
@@ -223,6 +243,7 @@ void UpdateCamera(NiAVObject* CameraNode, NiPoint3* LocalPosition) {
 			PlayerEx->ReticleOffset.y = v.y;
 			PlayerEx->ReticleOffset.z = v.z;
 		}
+
 		BSAnimGroupSequence* AnimSequence = Process->animData->animSequences[0];
 		TESAnimGroup* AnimGroup = (AnimSequence ? AnimSequence->animGroup : NULL);
 		if ((AnimGroup && AnimGroup->animGroup >= TESAnimGroup::kAnimGroup_DodgeForward && AnimGroup->animGroup <= TESAnimGroup::kAnimGroup_DodgeRight && AnimGroup->animType == 0) || (SitSleepState >= HighProcess::kSitSleep_SleepingIn && SitSleepState <= HighProcess::kSitSleep_SleepingOut) || Player->LifeState || Process->KnockedState) {

@@ -2052,7 +2052,7 @@ public:
 	BGSBipedModelList			bipedModelList;		// 0E0
 	BGSPickupPutdownSounds		pickupPutdownSounds;// 0E8
 
-	UInt8				eWeaponType;		// 0F4
+	UInt8				weaponType;			// 0F4
 	UInt8				pad[3];
 	float				animMult;			// 0F8
 	float				reach;				// 0FC
@@ -2986,25 +2986,29 @@ assert(sizeof(MiddleHighProcess) == 0x25C);
 
 class HighProcess : public MiddleHighProcess {
 public:
-	enum {
-		kAction_None = -1,
-		kAction_Equip_Weapon = 0,
-		kAction_Unequip_Weapon = 1,
-		kAction_Attack = 2,
-		kAction_Attack_Follow_Through = 3,
-		kAction_Attack_Latency = 4,
-		kAction_Attack_Throw_Attach = 5,
-		kAction_Attack_Throw_Release = 6,
-		kAction_Block = 7,
-		kAction_Stagger = 8,
-		kAction_Reload = 9,
-		kAction_Dodge = 10,
-		kAction_Wait_For_Lower_Body_Anim = 11,
-		kAction_Wait_For_Special_Idle = 12,
-		kAction_Force_Script_Anim = 13,
+	enum AnimAction {
+		kAnimAction_None = -1,
+		kAnimAction_Equip_Weapon = 0,
+		kAnimAction_Unequip_Weapon = 1,
+		kAnimAction_Attack = 2,
+		kAnimAction_Attack_Eject = 3,
+		kAnimAction_Attack_Follow_Through = 4,
+		kAnimAction_Attack_Throw = 5,
+		kAnimAction_Attack_Throw_Attach = 6,
+		kAnimAction_Block = 7,
+		kAnimAction_Recoil = 8,
+		kAnimAction_Reload = 9,
+		kAnimAction_Stagger = 10,
+		kAnimAction_Dodge = 11,
+		kAnimAction_Wait_For_Lower_Body_Anim = 12,
+		kAnimAction_Wait_For_Special_Idle = 13,
+		kAnimAction_Force_Script_Anim = 14,
+		kAnimAction_ReloadLoopStart = 15,
+		kAnimAction_ReloadLoopEnd = 16,
+		kAnimAction_ReloadLoop = 17,
 	};
 
-	enum {
+	enum SitSleep {
 		kSitSleep_None = 0,
 		kSitSleep_SittingIn = 3,
 		kSitSleep_Sitting = 4,
@@ -3694,6 +3698,7 @@ public:
 	bool				IsThirdPersonView(bool CameraMode, bool FirstPersonView) { return (!CameraMode ? isThirdPerson : !FirstPersonView); }
 	bool				IsVanityView() { return *(bool*)0x011E07B8; }
 	bool				IsAiming() { return (process->IsWeaponOut() && process->IsAiming()); }
+	bool				IsReloading() { return (ThisCall(0x008A8870, this)); }
 	TESWorldSpace*		GetWorldSpace() { return (parentCell != NULL ? parentCell->worldSpace : NULL); }
 	TESRegion*			GetRegion() { return currentRegion; }
 	void				UpdateInventory() {}
@@ -6942,21 +6947,21 @@ public:
 		UInt32	unk8;
 	};
 
-	enum {
-		kAction_None = -1,
-		kAction_EquipWeapon,
-		kAction_UnequipWeapon,
-		kAction_Attack,
-		kAction_AttackFollowThrough,
-		kAction_AttackBow,
-		kAction_AttackBowArrowAttached,
-		kAction_Block,
-		kAction_Recoil,
-		kAction_Stagger,
-		kAction_Dodge,
-		kAction_LowerBodyAnim,
-		kAction_SpecialIdle,
-		kAction_ScriptAnimation,
+	enum AnimAction {
+		AnimAction_None = -1,
+		AnimAction_EquipWeapon,
+		AnimAction_UnequipWeapon,
+		AnimAction_Attack,
+		AnimAction_AttackFollowThrough,
+		AnimAction_AttackBow,
+		AnimAction_AttackBowArrowAttached,
+		AnimAction_Block,
+		AnimAction_Recoil,
+		AnimAction_Stagger,
+		AnimAction_Dodge,
+		AnimAction_LowerBodyAnim,
+		AnimAction_SpecialIdle,
+		AnimAction_ScriptAnimation,
 	};
 
 	enum {
@@ -6976,7 +6981,7 @@ public:
 		kMovement_Slide = 0x8000,
 	};
 	
-	enum {
+	enum SitSleep {
 		kSitSleep_None = 0,
 		kSitSleep_SittingIn = 3,
 		kSitSleep_Sitting = 4,
