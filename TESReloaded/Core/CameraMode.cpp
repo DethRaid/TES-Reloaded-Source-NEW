@@ -50,6 +50,8 @@ void (__thiscall CameraMode::* ToggleCamera)(UInt8);
 void (__thiscall CameraMode::* TrackToggleCamera)(UInt8);
 void CameraMode::TrackToggleCamera(UInt8 FirstPerson) {
 	
+	SettingsMainStruct::CameraModeStruct* CameraMode = &TheSettingManager->SettingsMain.CameraMode;
+
 #if defined(NEWVEGAS)
 	if (TheKeyboardManager->OnControlDown(13)) return (this->*ToggleCamera)(FirstPerson);
 	if (Player->isSpecialView && Player->isSpecialViewPrevThird) Player->isSpecialViewPrevThird = ((UInt8)TheRenderManager->FirstPersonView) + 1;
@@ -57,9 +59,9 @@ void CameraMode::TrackToggleCamera(UInt8 FirstPerson) {
 #endif
 	TheRenderManager->FirstPersonView = FirstPerson;
 #if defined(NEWVEGAS)
-	//if (Player->isSpecialView || Player->IsAiming()) { (this->*ToggleCamera)(1); return; }
 	if (Player->isSpecialView) { (this->*ToggleCamera)(1); return; }
 #endif
+	if (CameraMode->FirstPersonAiming && Player->IsAiming()) { (this->*ToggleCamera)(1); return; }
 	(this->*ToggleCamera)(0);
 
 }
@@ -67,12 +69,14 @@ void CameraMode::TrackToggleCamera(UInt8 FirstPerson) {
 void (__thiscall CameraMode::* ToggleBody)(UInt8);
 void (__thiscall CameraMode::* TrackToggleBody)(UInt8);
 void CameraMode::TrackToggleBody(UInt8 FirstPerson) {
+	
+	SettingsMainStruct::CameraModeStruct* CameraMode = &TheSettingManager->SettingsMain.CameraMode;
 
 #if defined(NEWVEGAS)
 	if (TheSettingManager->GameLoading) Player->unkThirdPersonPrev = Player->unkThirdPerson = Player->isThirdPersonBody = Player->isThirdPerson = 1;
-	//if (Player->isSpecialView || Player->IsAiming()) { (this->*ToggleBody)(1); return; }
 	if (Player->isSpecialView) { (this->*ToggleBody)(1); return; }
 #endif
+	if (CameraMode->FirstPersonAiming && Player->IsAiming()) { (this->*ToggleBody)(1); return; }
 	(this->*ToggleBody)(0);
 
 }
@@ -126,8 +130,12 @@ void (__thiscall CameraMode::* SetAimingZoom)(float);
 void (__thiscall CameraMode::* TrackSetAimingZoom)(float);
 void CameraMode::TrackSetAimingZoom(float Arg1) {
 	
+	SettingsMainStruct::CameraModeStruct* CameraMode = &TheSettingManager->SettingsMain.CameraMode;
+
 	if (TheRenderManager->FirstPersonView) {
-		//if ((Player->isThirdPerson && Player->IsAiming()) || (!Player->isThirdPerson && !Player->IsAiming())) ThisCall(kToggleCamera, Player, 1);
+		if (CameraMode->FirstPersonAiming) {
+			if ((Player->isThirdPerson && Player->IsAiming()) || (!Player->isThirdPerson && !Player->IsAiming())) ThisCall(kToggleCamera, Player, 1);
+		}
 		(this->*SetAimingZoom)(Arg1);
 	}
 
@@ -222,6 +230,7 @@ void UpdateCamera(NiAVObject* CameraNode, NiPoint3* LocalPosition) {
 						o.x = CameraMode->OneHandAimingOffset.z;
 						o.y = CameraMode->OneHandAimingOffset.y;
 						o.z = CameraMode->OneHandAimingOffset.x;
+						break;
 					case TESObjectWEAP::WeaponType::kWeapType_TwoHandRifle:
 					case TESObjectWEAP::WeaponType::kWeapType_TwoHandAutomatic:
 					case TESObjectWEAP::WeaponType::kWeapType_TwoHandRifleEnergy:
@@ -243,7 +252,6 @@ void UpdateCamera(NiAVObject* CameraNode, NiPoint3* LocalPosition) {
 			PlayerEx->ReticleOffset.y = v.y;
 			PlayerEx->ReticleOffset.z = v.z;
 		}
-
 		BSAnimGroupSequence* AnimSequence = Process->animData->animSequences[0];
 		TESAnimGroup* AnimGroup = (AnimSequence ? AnimSequence->animGroup : NULL);
 		if ((AnimGroup && AnimGroup->animGroup >= TESAnimGroup::kAnimGroup_DodgeForward && AnimGroup->animGroup <= TESAnimGroup::kAnimGroup_DodgeRight && AnimGroup->animType == 0) || (SitSleepState >= HighProcess::kSitSleep_SleepingIn && SitSleepState <= HighProcess::kSitSleep_SleepingOut) || Player->LifeState || Process->KnockedState) {

@@ -95,6 +95,7 @@ struct SettingsMainStruct {
 		bool		Enabled;
 		bool		ChasingFirst;
 		bool		ChasingThird;
+		bool		FirstPersonAiming;
 		UInt8		Crosshair;
 		NiPoint3	Offset;
 		NiPoint3	OneHandAimingOffset;

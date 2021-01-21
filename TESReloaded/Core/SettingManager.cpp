@@ -193,15 +193,24 @@ SettingManager::SettingManager() {
 	SettingsMain.GrassMode.Enabled = GetPrivateProfileIntA("GrassMode", "Enabled", 0, Filename);
 
 	SettingsMain.CameraMode.Enabled = GetPrivateProfileIntA("CameraMode", "Enabled", 0, Filename);
-	SettingsMain.CameraMode.Crosshair = GetPrivateProfileIntA("CameraMode", "Crosshair", 2, Filename);
+	SettingsMain.CameraMode.Crosshair = GetPrivateProfileIntA("CameraMode", "Crosshair", 0, Filename);
 	SettingsMain.CameraMode.ChasingFirst = GetPrivateProfileIntA("CameraMode", "ChasingFirst", 0, Filename);
 	SettingsMain.CameraMode.ChasingThird = GetPrivateProfileIntA("CameraMode", "ChasingThird", 0, Filename);
+	SettingsMain.CameraMode.FirstPersonAiming = GetPrivateProfileIntA("CameraMode", "FirstPersonAiming", 0, Filename);
+	GetPrivateProfileStringA("CameraMode", "FoV", "90.0", value, SettingStringBuffer, Filename);
+	SettingsMain.CameraMode.FoV = atof(value);
 	GetPrivateProfileStringA("CameraMode", "OffsetX", "0.0", value, SettingStringBuffer, Filename);
 	SettingsMain.CameraMode.Offset.x = atof(value);
 	GetPrivateProfileStringA("CameraMode", "OffsetY", "15.0", value, SettingStringBuffer, Filename);
 	SettingsMain.CameraMode.Offset.y = atof(value);
 	GetPrivateProfileStringA("CameraMode", "OffsetZ", "5.0", value, SettingStringBuffer, Filename);
 	SettingsMain.CameraMode.Offset.z = atof(value);
+	GetPrivateProfileStringA("CameraMode", "DialogOffsetX", "50.0", value, SettingStringBuffer, Filename);
+	SettingsMain.CameraMode.DialogOffset.x = atof(value);
+	GetPrivateProfileStringA("CameraMode", "DialogOffsetY", "-10.0", value, SettingStringBuffer, Filename);
+	SettingsMain.CameraMode.DialogOffset.y = atof(value);
+	GetPrivateProfileStringA("CameraMode", "DialogOffsetZ", "10.0", value, SettingStringBuffer, Filename);
+	SettingsMain.CameraMode.DialogOffset.z = atof(value);
 	GetPrivateProfileStringA("CameraMode", "OneHandAimingOffsetX", "0.0", value, SettingStringBuffer, Filename);
 	SettingsMain.CameraMode.OneHandAimingOffset.x = atof(value);
 	GetPrivateProfileStringA("CameraMode", "OneHandAimingOffsetY", "15.0", value, SettingStringBuffer, Filename);
@@ -214,14 +223,6 @@ SettingManager::SettingManager() {
 	SettingsMain.CameraMode.TwoHandAimingOffset.y = atof(value);
 	GetPrivateProfileStringA("CameraMode", "TwoHandAimingOffsetZ", "5.0", value, SettingStringBuffer, Filename);
 	SettingsMain.CameraMode.TwoHandAimingOffset.z = atof(value);
-	GetPrivateProfileStringA("CameraMode", "DialogOffsetX", "50.0", value, SettingStringBuffer, Filename);
-	SettingsMain.CameraMode.DialogOffset.x = atof(value);
-	GetPrivateProfileStringA("CameraMode", "DialogOffsetY", "-10.0", value, SettingStringBuffer, Filename);
-	SettingsMain.CameraMode.DialogOffset.y = atof(value);
-	GetPrivateProfileStringA("CameraMode", "DialogOffsetZ", "10.0", value, SettingStringBuffer, Filename);
-	SettingsMain.CameraMode.DialogOffset.z = atof(value);
-	GetPrivateProfileStringA("CameraMode", "FoV", "90.0", value, SettingStringBuffer, Filename);
-	SettingsMain.CameraMode.FoV = atof(value);
 
 	SettingsMain.MountedCombat.Enabled = GetPrivateProfileIntA("MountedCombat", "Enabled", 0, Filename);
 	GetPrivateProfileStringA("MountedCombat", "WeaponOnBackPosX", "0.0", value, SettingStringBuffer, Filename);
@@ -1143,13 +1144,19 @@ void SettingManager::SaveSettings(const char* Item, const char* Definition) {
 		if (!strcmp(Definition, "Main")) {
 			WritePrivateProfileStringA("Main", "ScreenshotKey", ToString(SettingsMain.Main.ScreenshotKey).c_str(), SettingsMain.Main.MainFile);
 			WritePrivateProfileStringA("Main", "FPSOverlay", ToString(SettingsMain.Main.FPSOverlay).c_str(), SettingsMain.Main.MainFile);
+			WritePrivateProfileStringA("CameraMode", "FoV", ToString(SettingsMain.CameraMode.FoV).c_str(), SettingsMain.Main.MainFile);
 			WritePrivateProfileStringA("CameraMode", "OffsetX", ToString(SettingsMain.CameraMode.Offset.x).c_str(), SettingsMain.Main.MainFile);
 			WritePrivateProfileStringA("CameraMode", "OffsetY", ToString(SettingsMain.CameraMode.Offset.y).c_str(), SettingsMain.Main.MainFile);
 			WritePrivateProfileStringA("CameraMode", "OffsetZ", ToString(SettingsMain.CameraMode.Offset.z).c_str(), SettingsMain.Main.MainFile);
 			WritePrivateProfileStringA("CameraMode", "DialogOffsetX", ToString(SettingsMain.CameraMode.DialogOffset.x).c_str(), SettingsMain.Main.MainFile);
 			WritePrivateProfileStringA("CameraMode", "DialogOffsetY", ToString(SettingsMain.CameraMode.DialogOffset.y).c_str(), SettingsMain.Main.MainFile);
 			WritePrivateProfileStringA("CameraMode", "DialogOffsetZ", ToString(SettingsMain.CameraMode.DialogOffset.z).c_str(), SettingsMain.Main.MainFile);
-			WritePrivateProfileStringA("CameraMode", "FoV", ToString(SettingsMain.CameraMode.FoV).c_str(), SettingsMain.Main.MainFile);
+			WritePrivateProfileStringA("CameraMode", "OneHandAimingOffsetX", ToString(SettingsMain.CameraMode.OneHandAimingOffset.x).c_str(), SettingsMain.Main.MainFile);
+			WritePrivateProfileStringA("CameraMode", "OneHandAimingOffsetY", ToString(SettingsMain.CameraMode.OneHandAimingOffset.y).c_str(), SettingsMain.Main.MainFile);
+			WritePrivateProfileStringA("CameraMode", "OneHandAimingOffsetZ", ToString(SettingsMain.CameraMode.OneHandAimingOffset.z).c_str(), SettingsMain.Main.MainFile);
+			WritePrivateProfileStringA("CameraMode", "TwoHandAimingOffsetX", ToString(SettingsMain.CameraMode.TwoHandAimingOffset.x).c_str(), SettingsMain.Main.MainFile);
+			WritePrivateProfileStringA("CameraMode", "TwoHandAimingOffsetY", ToString(SettingsMain.CameraMode.TwoHandAimingOffset.y).c_str(), SettingsMain.Main.MainFile);
+			WritePrivateProfileStringA("CameraMode", "TwoHandAimingOffsetZ", ToString(SettingsMain.CameraMode.TwoHandAimingOffset.z).c_str(), SettingsMain.Main.MainFile);
 #if defined(SKYRIM)
 			WritePrivateProfileStringA("ShadowMode", "NearQuality", ToString(SettingsMain.ShadowMode.NearQuality).c_str(), SettingsMain.Main.MainFile);
 #endif
@@ -1646,13 +1653,19 @@ SettingsList SettingManager::GetMenuSettings(const char* Item, const char* Defin
 				Settings["FPSOverlay"] = SettingsMain.Main.FPSOverlay;
 			}
 			else if (!strcmp(Section, "CameraMode")) {
+				Settings["FoV"] = SettingsMain.CameraMode.FoV;
 				Settings["OffsetX"] = SettingsMain.CameraMode.Offset.x;
 				Settings["OffsetY"] = SettingsMain.CameraMode.Offset.y;
 				Settings["OffsetZ"] = SettingsMain.CameraMode.Offset.z;
 				Settings["DialogOffsetX"] = SettingsMain.CameraMode.DialogOffset.x;
 				Settings["DialogOffsetY"] = SettingsMain.CameraMode.DialogOffset.y;
 				Settings["DialogOffsetZ"] = SettingsMain.CameraMode.DialogOffset.z;
-				Settings["FoV"] = SettingsMain.CameraMode.FoV;
+				Settings["OneHandAimingOffsetX"] = SettingsMain.CameraMode.OneHandAimingOffset.x;
+				Settings["OneHandAimingOffsetY"] = SettingsMain.CameraMode.OneHandAimingOffset.y;
+				Settings["OneHandAimingOffsetZ"] = SettingsMain.CameraMode.OneHandAimingOffset.z;
+				Settings["TwoHandAimingOffsetX"] = SettingsMain.CameraMode.TwoHandAimingOffset.x;
+				Settings["TwoHandAimingOffsetY"] = SettingsMain.CameraMode.TwoHandAimingOffset.y;
+				Settings["TwoHandAimingOffsetZ"] = SettingsMain.CameraMode.TwoHandAimingOffset.z;
 			}
 			else if (!strcmp(Section, "EquipmentMode")) {
 				Settings["CombatEquipmentKey"] = SettingsMain.EquipmentMode.CombatEquipmentKey;
@@ -2089,7 +2102,9 @@ void SettingManager::SetMenuSetting(const char* Item, const char* Definition, co
 					SettingsMain.Main.FPSOverlay = Value;
 			}
 			else if (!strcmp(Section, "CameraMode")) {
-				if (!strcmp(Setting, "OffsetX"))
+				if (!strcmp(Setting, "FoV"))
+					SettingsMain.CameraMode.FoV = Value;
+				else if (!strcmp(Setting, "OffsetX"))
 					SettingsMain.CameraMode.Offset.x = Value;
 				else if (!strcmp(Setting, "OffsetY"))
 					SettingsMain.CameraMode.Offset.y = Value;
@@ -2101,8 +2116,18 @@ void SettingManager::SetMenuSetting(const char* Item, const char* Definition, co
 					SettingsMain.CameraMode.DialogOffset.y = Value;
 				else if (!strcmp(Setting, "DialogOffsetZ"))
 					SettingsMain.CameraMode.DialogOffset.z = Value;
-				else if (!strcmp(Setting, "FoV"))
-					SettingsMain.CameraMode.FoV = Value;
+				else if (!strcmp(Setting, "OneHandAimingOffsetX"))
+					SettingsMain.CameraMode.OneHandAimingOffset.x = Value;
+				else if (!strcmp(Setting, "OneHandAimingOffsetY"))
+					SettingsMain.CameraMode.OneHandAimingOffset.y = Value;
+				else if (!strcmp(Setting, "OneHandAimingOffsetZ"))
+					SettingsMain.CameraMode.OneHandAimingOffset.z = Value;
+				else if (!strcmp(Setting, "TwoHandAimingOffsetX"))
+					SettingsMain.CameraMode.TwoHandAimingOffset.x = Value;
+				else if (!strcmp(Setting, "TwoHandAimingOffsetY"))
+					SettingsMain.CameraMode.TwoHandAimingOffset.y = Value;
+				else if (!strcmp(Setting, "TwoHandAimingOffsetZ"))
+					SettingsMain.CameraMode.TwoHandAimingOffset.z = Value;
 			}
 			else if (!strcmp(Section, "EquipmentMode")) {
 				if (!strcmp(Setting, "CombatEquipmentKey"))
