@@ -225,6 +225,7 @@ void UpdateCamera(NiAVObject* CameraNode, NiPoint3* LocalPosition) {
 			NiPoint3 o = { CameraMode->Offset.z, CameraMode->Offset.y, CameraMode->Offset.x };
 			if (Player->IsAiming()) {
 				switch (Player->ActorSkinInfo->WeaponForm->weaponType) {
+#if defined(NEWVEGAS)
 					case TESObjectWEAP::WeaponType::kWeapType_OneHandPistol:
 					case TESObjectWEAP::WeaponType::kWeapType_OneHandPistolEnergy:
 						o.x = CameraMode->OneHandAimingOffset.z;
@@ -240,6 +241,13 @@ void UpdateCamera(NiAVObject* CameraNode, NiPoint3* LocalPosition) {
 						o.y = CameraMode->TwoHandAimingOffset.y;
 						o.z = CameraMode->TwoHandAimingOffset.x;
 						break;
+#elif defined(OBLIVION)
+					case TESObjectWEAP::WeaponType::kWeapType_Bow:
+						o.x = CameraMode->BowAimingOffset.z;
+						o.y = CameraMode->BowAimingOffset.y;
+						o.z = CameraMode->BowAimingOffset.x;
+						break;
+#endif
 					default:
 						break;
 				}

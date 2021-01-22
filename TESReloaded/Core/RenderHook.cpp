@@ -695,7 +695,7 @@ void CreateRenderHook() {
 	DetourAttach(&(PVOID&)RenderFirstPerson,			*((PVOID*)&TrackRenderFirstPerson));
 	DetourAttach(&(PVOID&)GetWaterHeightLOD,			*((PVOID*)&TrackGetWaterHeightLOD));
 	DetourAttach(&(PVOID&)SetupRenderingPass,					  &TrackSetupRenderingPass);
-	//DetourAttach(&(PVOID&)SetShaderPackage,						  &TrackSetShaderPackage);
+	DetourAttach(&(PVOID&)SetShaderPackage,						  &TrackSetShaderPackage);
 #elif defined(OBLIVION)
 	DetourAttach(&(PVOID&)ShowDetectorWindow,			*((PVOID*)&TrackShowDetectorWindow));
 	DetourAttach(&(PVOID&)SetupShaderPrograms,			*((PVOID*)&TrackSetupShaderPrograms));

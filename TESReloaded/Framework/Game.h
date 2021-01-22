@@ -6294,12 +6294,12 @@ assert(sizeof(TESObjectLIGH) == 0x90);
 class TESObjectWEAP : public TESBoundObject {
 public:
 	enum WeaponType {
-		kType_BladeOneHand = 0,
-		kType_BladeTwoHand,
-		kType_BluntOneHand,
-		kType_BluntTwoHand,
-		kType_Staff,
-		kType_Bow,
+		kWeapType_BladeOneHand = 0,
+		kWeapType_BladeTwoHand,
+		kWeapType_BluntOneHand,
+		kWeapType_BluntTwoHand,
+		kWeapType_Staff,
+		kWeapType_Bow,
 	};
 
 	TESFullName			fullName;		// 024
@@ -6311,7 +6311,7 @@ public:
 	TESWeightForm		weight;			// 078
 	TESHealthForm		health;			// 080
 	TESAttackDamageForm	attackDmg;		// 088
-	UInt32				type;			// 090
+	UInt32				weaponType;		// 090
 	float				speed;			// 094
 	float				reach;			// 098
 	UInt32				ignoreNormalWeaponResist;	// 09C
@@ -6948,20 +6948,20 @@ public:
 	};
 
 	enum AnimAction {
-		AnimAction_None = -1,
-		AnimAction_EquipWeapon,
-		AnimAction_UnequipWeapon,
-		AnimAction_Attack,
-		AnimAction_AttackFollowThrough,
-		AnimAction_AttackBow,
-		AnimAction_AttackBowArrowAttached,
-		AnimAction_Block,
-		AnimAction_Recoil,
-		AnimAction_Stagger,
-		AnimAction_Dodge,
-		AnimAction_LowerBodyAnim,
-		AnimAction_SpecialIdle,
-		AnimAction_ScriptAnimation,
+		kAnimAction_None = -1,
+		kAnimAction_EquipWeapon,
+		kAnimAction_UnequipWeapon,
+		kAnimAction_Attack,
+		kAnimAction_AttackFollowThrough,
+		kAnimAction_AttackBow,
+		kAnimAction_AttackBowArrowAttached,
+		kAnimAction_Block,
+		kAnimAction_Recoil,
+		kAnimAction_Stagger,
+		kAnimAction_Dodge,
+		kAnimAction_LowerBodyAnim,
+		kAnimAction_SpecialIdle,
+		kAnimAction_ScriptAnimation,
 	};
 
 	enum {
@@ -7521,7 +7521,7 @@ public:
 	float			GetFoV(bool IsSpecialView) { return worldFoV; }
 	bool			IsThirdPersonView(bool CameraMode, bool FirstPersonView) { return (!CameraMode ? isThirdPerson : !FirstPersonView); }
 	bool			IsVanityView() { return *(bool*)0x00B3BB04; }
-	bool			IsAiming() { SInt16 CurrentAction = ((HighProcess*)process)->currentAction; return (CurrentAction == HighProcess::kAction_AttackBow || CurrentAction == HighProcess::kAction_AttackBowArrowAttached); }
+	bool			IsAiming() { SInt16 CurrentAction = ((HighProcess*)process)->currentAction; return (CurrentAction == HighProcess::kAnimAction_AttackBow || CurrentAction == HighProcess::kAnimAction_AttackBowArrowAttached); }
 	TESWorldSpace*  GetWorldSpace() { return (parentCell != NULL ? parentCell->worldSpace : NULL); }
 	TESRegion*		GetRegion() { return currentRegion; }
 	void			UpdateInventory() { void (*UpdateInventoryMenu)() = (void(*)())0x005AADC0; ThisCall(0x00668CC0, this); ThisCall(0x006575B0, this->process, this, 1, 0, 0); ThisCall(0x0060E260, this); UpdateInventoryMenu(); }

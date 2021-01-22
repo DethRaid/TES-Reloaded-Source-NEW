@@ -364,7 +364,7 @@ void Equipment::TrackManageItem(int SelectedID, TileRect* SelectedRect) {
 				InventoryChanges::EntryData* InventoryData = Player->GetInventoryItem(fIndex);
 				if (InventoryData->type->formType == TESForm::FormType::kFormType_Weapon) {
 					TESObjectWEAP* Weapon = (TESObjectWEAP*)InventoryData->type;
-					if ((Weapon->type == TESObjectWEAP::kType_BladeOneHand || Weapon->type == TESObjectWEAP::kType_BluntOneHand) && !(Weapon->flags & 0x400) && !Weapon->scriptable.script) Process->LeftEquippingState = HighProcessEx::State::In;
+					if ((Weapon->weaponType == TESObjectWEAP::kWeapType_BladeOneHand || Weapon->weaponType == TESObjectWEAP::kWeapType_BluntOneHand) && !(Weapon->flags & 0x400) && !Weapon->scriptable.script) Process->LeftEquippingState = HighProcessEx::State::In;
 				}
 			}
 		}
@@ -396,9 +396,9 @@ int Equipment::TrackProcessAction(float Arg1, float Arg2) {
 		}
 		if (WeaponData && (ShieldData || LeftWeaponData) && (!LightData || (LightData && Process->OnBeltState == HighProcessEx::State::In))) {
 			TESObjectWEAP* Weapon = (TESObjectWEAP*)WeaponData->type;
-			if (Weapon->type == TESObjectWEAP::kType_BladeOneHand || Weapon->type == TESObjectWEAP::kType_BluntOneHand) {
+			if (Weapon->weaponType == TESObjectWEAP::kWeapType_BladeOneHand || Weapon->weaponType == TESObjectWEAP::kWeapType_BluntOneHand) {
 				switch (Process->currentAction) {
-					case HighProcess::kAction_None:
+					case HighProcess::kAnimAction_None:
 						if (Process->OnBackActionState == HighProcessEx::State::StateNone) {
 							if (Process->WeaponState && Process->OnBackState == HighProcessEx::State::In)
 								Process->OnBackActionState = HighProcessEx::State::Out;
@@ -407,7 +407,7 @@ int Equipment::TrackProcessAction(float Arg1, float Arg2) {
 						}
 						if (Process->OnBackActionState == HighProcessEx::State::In || Process->OnBackActionState == HighProcessEx::State::Out) Process->animData->QueueIdle(TheEquipmentManager->OnBackAnim, Act, TheEquipmentManager->OnBackAnim->animFlags);
 						break;
-					case HighProcess::kAction_SpecialIdle:
+					case HighProcess::kAnimAction_SpecialIdle:
 						if (Process->OnBackActionState == HighProcessEx::State::In || Process->OnBackActionState == HighProcessEx::State::Out) {
 							BSAnimGroupSequence* AnimSequence = Process->animData->animSequences[4];
 							if (AnimSequence && !memcmp(AnimSequence->filePath, "Meshes\\Characters\\_Male\\IdleAnims\\oronbackanim.kf", 49) && AnimSequence->last >= 0.4) {
@@ -910,11 +910,11 @@ void SetWeaponRotationPosition(HighProcess* Process, NiNode* ObjectNode) {
 	if (Process->GetProcessLevel() == 0 && !Process->WeaponState) {
 		TESObjectWEAP* Weapon = (TESObjectWEAP*)Process->equippedWeaponData->type;
 		EquipmentManager::PositionRotationType Type = EquipmentManager::PositionRotationType::None;
-		if (Weapon->type == TESObjectWEAP::kType_BladeTwoHand || Weapon->type == TESObjectWEAP::kType_BluntTwoHand)
+		if (Weapon->weaponType == TESObjectWEAP::kWeapType_BladeTwoHand || Weapon->weaponType == TESObjectWEAP::kWeapType_BluntTwoHand)
 			Type = EquipmentManager::PositionRotationType::TwoHandWeapon;
-		else if (Weapon->type == TESObjectWEAP::kType_Staff)
+		else if (Weapon->weaponType == TESObjectWEAP::kWeapType_Staff)
 			Type = EquipmentManager::PositionRotationType::Staff;
-		else if (Weapon->type == TESObjectWEAP::kType_Bow)
+		else if (Weapon->weaponType == TESObjectWEAP::kWeapType_Bow)
 			Type = EquipmentManager::PositionRotationType::Bow;
 		TheEquipmentManager->SetRotationPosition(ObjectNode, Type, Process->SitSleepState);
 	}

@@ -2,7 +2,7 @@
 static const UInt32 kHitEventHook = 0x00000000;
 static const UInt32 kHitEventReturn = 0x00000000;
 #elif defined(OBLIVION)
-#define wtype type
+#define wtype weaponType
 static const UInt32 kHitEventHook = 0x005FF613;
 static const UInt32 kHitEventReturn = 0x005FF618;
 #elif defined(SKYRIM)
@@ -40,7 +40,7 @@ void RaiseEvent(Actor* Act, Actor* TargetAct, GameEventManager::EventEnum GameEv
 					InventoryChanges::EntryData* WeaponData = Proc->equippedWeaponData;
 					if (WeaponData) {
 						TESForm* EquippedObject = WeaponData->type;
-						if (EquippedObject && EquippedObject->formType == TESForm::FormType::kFormType_Weapon && ((TESObjectWEAP*)EquippedObject)->wtype <= TESObjectWEAP::kType_BluntTwoHand) TheGameEventManager->OnHitByPlayer();
+						if (EquippedObject && EquippedObject->formType == TESForm::FormType::kFormType_Weapon && ((TESObjectWEAP*)EquippedObject)->wtype <= TESObjectWEAP::kWeapType_BluntTwoHand) TheGameEventManager->OnHitByPlayer();
 					}
 #elif defined (SKYRIM)
 					TESForm* EquippedObject = Act->GetEquippedObject(ActorProcessManager::EquippedHand::kEquippedHand_Right);

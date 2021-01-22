@@ -180,11 +180,11 @@ void HideWeapon(Character* Act, UInt8 SitSleepState)
 			if (WeaponData) {
 				TESObjectWEAP* Weapon = (TESObjectWEAP*)WeaponData->type;
 				EquipmentManager::PositionRotationType Type = EquipmentManager::PositionRotationType::None;
-				if (Weapon->type == TESObjectWEAP::kType_BladeTwoHand || Weapon->type == TESObjectWEAP::kType_BluntTwoHand)
+				if (Weapon->weaponType == TESObjectWEAP::kWeapType_BladeTwoHand || Weapon->weaponType == TESObjectWEAP::kWeapType_BluntTwoHand)
 					Type = EquipmentManager::PositionRotationType::TwoHandWeapon;
-				else if (Weapon->type == TESObjectWEAP::kType_Staff)
+				else if (Weapon->weaponType == TESObjectWEAP::kWeapType_Staff)
 					Type = EquipmentManager::PositionRotationType::Staff;
-				else if (Weapon->type == TESObjectWEAP::kType_Bow)
+				else if (Weapon->weaponType == TESObjectWEAP::kWeapType_Bow)
 					Type = EquipmentManager::PositionRotationType::Bow;
 				NiAVObject* Object = Act->ActorSkinInfo->WeaponObject;
 				if (Object) {

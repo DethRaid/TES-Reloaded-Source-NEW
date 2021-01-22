@@ -22,6 +22,7 @@ static const void* VFTNiTriShape = (void*)0x0109D454;
 static const void* VFTNiTriStrips = (void*)0x0109CD44;
 #elif defined(OBLIVION)
 #define RenderStateArgs 0
+#define kFormType_MoveableStatic kFormType_Stat
 #define kRockParams 0x00B46778
 #define kRustleParams 0x00B46788
 #define kWindMatrixes 0x00B467B8
@@ -158,7 +159,7 @@ TESObjectREFR* ShadowManager::GetRef(TESObjectREFR* Ref, SettingsShadowStruct::F
 				(TypeID == TESForm::FormType::kFormType_Container && Forms->Containers) ||
 				(TypeID == TESForm::FormType::kFormType_Door && Forms->Doors) ||
 				(TypeID == TESForm::FormType::kFormType_Misc && Forms->Misc) ||
-				(TypeID == TESForm::FormType::kFormType_Stat && Forms->Statics) ||
+				(TypeID >= TESForm::FormType::kFormType_Stat && TypeID <= TESForm::FormType::kFormType_MoveableStatic && Forms->Statics) ||
 				(TypeID == TESForm::FormType::kFormType_Tree && Forms->Trees) ||
 				(TypeID == TESForm::FormType::kFormType_Furniture && Forms->Furniture) ||
 				(TypeID >= TESForm::FormType::kFormType_NPC && TypeID <= TESForm::FormType::kFormType_LeveledCreature && Forms->Actors))
@@ -578,7 +579,9 @@ void ShadowManager::RenderShadowMaps() {
 		NiTList<ShadowSceneLight>::Entry* Entry = SceneNode->lights.start;
 		while (Entry) {
 			NiPointLight* Light = Entry->data->sourceLight;
-			SceneLights[(int)Light->GetDistance(&Player->pos)] = Light;
+			int Distance = (int)Light->GetDistance(&Player->pos);
+			while (SceneLights[Distance]) { --Distance; }
+			SceneLights[Distance] = Light;
 			Entry = Entry->next;
 		}
 

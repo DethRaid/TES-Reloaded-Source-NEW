@@ -223,6 +223,12 @@ SettingManager::SettingManager() {
 	SettingsMain.CameraMode.TwoHandAimingOffset.y = atof(value);
 	GetPrivateProfileStringA("CameraMode", "TwoHandAimingOffsetZ", "5.0", value, SettingStringBuffer, Filename);
 	SettingsMain.CameraMode.TwoHandAimingOffset.z = atof(value);
+	GetPrivateProfileStringA("CameraMode", "BowAimingOffsetX", "0.0", value, SettingStringBuffer, Filename);
+	SettingsMain.CameraMode.BowAimingOffset.x = atof(value);
+	GetPrivateProfileStringA("CameraMode", "BowAimingOffsetY", "15.0", value, SettingStringBuffer, Filename);
+	SettingsMain.CameraMode.BowAimingOffset.y = atof(value);
+	GetPrivateProfileStringA("CameraMode", "BowAimingOffsetZ", "5.0", value, SettingStringBuffer, Filename);
+	SettingsMain.CameraMode.BowAimingOffset.z = atof(value);
 
 	SettingsMain.MountedCombat.Enabled = GetPrivateProfileIntA("MountedCombat", "Enabled", 0, Filename);
 	GetPrivateProfileStringA("MountedCombat", "WeaponOnBackPosX", "0.0", value, SettingStringBuffer, Filename);

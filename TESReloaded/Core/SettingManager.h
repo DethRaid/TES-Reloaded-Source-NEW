@@ -100,6 +100,7 @@ struct SettingsMainStruct {
 		NiPoint3	Offset;
 		NiPoint3	OneHandAimingOffset;
 		NiPoint3	TwoHandAimingOffset;
+		NiPoint3	BowAimingOffset;
 		NiPoint3	DialogOffset;
 		float		FoV;
 	};
