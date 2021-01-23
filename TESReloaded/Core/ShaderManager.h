@@ -39,7 +39,6 @@ struct ShaderConstants {
 		D3DXMATRIX		ShadowCameraToLight[3];
 		D3DXVECTOR4		ShadowCubeMapLightPosition;
 		D3DXVECTOR4		ShadowLightPosition[4];
-		D3DXVECTOR4		ShadowCubeMapFarPlanes;
 		D3DXVECTOR4		ShadowCubeMapBlend;
 	};
 	struct WaterStruct {

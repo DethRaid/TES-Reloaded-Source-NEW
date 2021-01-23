@@ -28,7 +28,7 @@ void RenderManager::GetSceneCameraData() {
 void RenderManager::SetupSceneCamera() {
 
 	NiCamera* Camera = WorldSceneGraph->camera;
-
+	
 	if (Camera) {
 		NiPoint3 Forward = { 0.0f, 0.0f, 0.0f };
 		NiPoint3 Up = { 0.0f, 0.0f, 0.0f };

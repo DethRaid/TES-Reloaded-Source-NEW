@@ -117,8 +117,6 @@ void ShaderProgram::SetConstantTableValue(LPCSTR Name, UInt32 Index) {
 		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[2];
 	else if (!strcmp(Name, "TESR_ShadowLightPosition3"))
 		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[3];
-	else if (!strcmp(Name, "TESR_ShadowCubeMapFarPlanes"))
-		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapFarPlanes;
 	else if (!strcmp(Name, "TESR_ShadowCubeMapBlend"))
 		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapBlend;
 	else if (!strcmp(Name, "TESR_ReciprocalResolution"))
