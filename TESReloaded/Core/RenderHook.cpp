@@ -726,6 +726,8 @@ void CreateRenderHook() {
 #if defined(NEWVEGAS)
 	WriteRelJump(0x004E4C3B, 0x004E4C42); // Fixes reflections when cell water height is not like worldspace water height
 	WriteRelJump(0x004E4DA4, 0x004E4DAC); // Fixes reflections on distant water
+	WriteRelCall(0x00875B86, 0x00710AB0); // Fixes a bug (the world fov is not restored after the first person rendering)
+	WriteRelCall(0x00875B9D, 0x00710AB0); // Fixes a bug (the world fov is not restored after the first person rendering)
 	WriteRelCall(kMultiBoundWaterHeightFix1,	(UInt32)MultiBoundWaterHeightFix);
 	WriteRelCall(kMultiBoundWaterHeightFix2,	(UInt32)MultiBoundWaterHeightFix);
 	if (TheSettingManager->SettingsMain.Main.ReplaceIntro) WriteRelJump(kSetTileShaderConstants, (UInt32)SetTileShaderConstants);

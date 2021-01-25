@@ -674,8 +674,7 @@ void ShadowManager::CalculateBlend(NiPointLight** Lights, int LightIndex) {
 
 static __declspec(naked) void RenderShadowMapHook() {
 
-	__asm
-	{
+	__asm {
 		pushad
 		mov		ecx, TheShadowManager
 		call	ShadowManager::RenderShadowMaps
@@ -711,8 +710,7 @@ void AddCastShadowFlag(TESObjectREFR* Ref, TESObjectLIGH* Light, NiPointLight* L
 
 static __declspec(naked) void AddCastShadowFlagHook() {
 
-	__asm
-	{
+	__asm {
 #if defined(OBLIVION)
 		mov     ecx, [esp + 0x158]
 		pushad
@@ -759,8 +757,7 @@ void LeavesNodeName(BSTreeNode* TreeNode) {
 
 static __declspec(naked) void LeavesNodeNameHook() {
 
-	__asm
-	{
+	__asm {
 		pushad
 		push	eax 
 		call	LeavesNodeName
@@ -801,8 +798,7 @@ void EditorCastShadowFlag(HWND Window, TESForm* Form) {
 
 static __declspec(naked) void EditorCastShadowFlagHook() {
 
-	__asm
-	{
+	__asm {
 		pushad
 		push	eax
 		push	edi
