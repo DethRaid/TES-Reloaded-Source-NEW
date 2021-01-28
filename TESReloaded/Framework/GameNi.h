@@ -577,7 +577,7 @@ assert(sizeof(NiCamera) == 0x114);
 
 class SceneGraph : public NiNode {
 public:
-	void			SetCameraFOV(float FoV) { ThisCall(0x00C52020, this, FoV, 0, NULL, 0); }
+	void			SetCameraFOV(float FoV) { void (__cdecl* UpdateParticleShaderFoVData)(float) = (void (__cdecl*)(float))0x00B54000; ThisCall(0x00C52020, this, FoV, 0, NULL, 0); UpdateParticleShaderFoVData(FoV); }
 
 	NiCamera*			camera;					// AC
 	UInt32				unkB0;					// B0
@@ -1971,7 +1971,7 @@ assert(sizeof(NiCamera) == 0x124);
 
 class SceneGraph : public NiNode {
 public:
-	void			SetCameraFOV(float FoV) { ThisCall(0x00411160, this, FoV, 0); }
+	void			SetCameraFOV(float FoV) { void (__cdecl* UpdateParticleShaderFoVData)(float) = (void (__cdecl*)(float))0x007B70E0; ThisCall(0x00411160, this, FoV, 0); UpdateParticleShaderFoVData(FoV); }
 
 	NiCamera*			camera;					// 0DC
 	UInt32				unk0E0;					// 0E0
@@ -3703,7 +3703,7 @@ assert(sizeof(NiCamera) == 0x120);
 
 class SceneGraph : public NiNode {
 public:
-	void			SetCameraFOV(float FoV) { ThisCall(0x00B17960, this, FoV, 0, NULL, 0); }
+	void			SetCameraFOV(float FoV) { void (__cdecl * UpdateParticleShaderFoVData)(float) = (void (__cdecl*)(float))0x00C71820; ThisCall(0x00B17960, this, FoV, 0, NULL, 0); UpdateParticleShaderFoVData(FoV); }
 
 	NiCamera*			camera;					// B8
 	UInt32				unkBC;					// BC

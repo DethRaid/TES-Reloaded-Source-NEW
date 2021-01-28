@@ -3693,7 +3693,7 @@ public:
 	virtual void		Unk_139();
 	virtual void		Unk_13A();
 	
-	void				SetFoV(SceneGraph* WorldSceneGraph, float* SettingWorldFoV, float* Setting1stPersonFoV, float FoV) { void (__cdecl* UpdateParticleShaderFoVData)(float) = (void (__cdecl*)(float))0x00B54000; WorldSceneGraph->SetCameraFOV(FoV); UpdateParticleShaderFoVData(FoV); worldFoV = firstPersonFoV = *SettingWorldFoV = *Setting1stPersonFoV = FoV; }
+	void				SetFoV(SceneGraph* WorldSceneGraph, float* SettingWorldFoV, float* Setting1stPersonFoV, float FoV) { WorldSceneGraph->SetCameraFOV(FoV); worldFoV = firstPersonFoV = *SettingWorldFoV = *Setting1stPersonFoV = FoV; }
 	float				GetFoV(bool IsSpecialView) { return (IsSpecialView ? firstPersonFoV : worldFoV); }
 	bool				IsThirdPersonView(bool CameraMode, bool FirstPersonView) { return (!CameraMode ? isThirdPerson : !FirstPersonView); }
 	bool				IsVanityView() { return *(bool*)0x011E07B8; }
@@ -5030,7 +5030,12 @@ public:
 	UInt32					unk140[5];			// 140
 	UInt32					unk154;				// 154
 	UInt32					unk158;				// 158
-	UInt32					unk15C[6];			// 15C
+	UInt32					unk15C;				// 15C
+	UInt32					unk160;				// 160
+	UInt32					unk164;				// 164
+	UInt32					unk168;				// 168
+	void*					unk16C;				// 16C
+	UInt32					unk170;				// 170
 	void*					pipboyManager;		// 174 FOPipboyManager*
 	UInt32					unk178;				// 178
 	NiTArray<void>			array17C;			// 17C NiTPrimitiveArray@PackedMenu@BGSMenuPacker
@@ -7517,7 +7522,7 @@ public:
 	};
 	
 	void			RestoreCamera() { ThisCall(0x0066C600, this); }
-	void			SetFoV(SceneGraph* WorldSceneGraph, float* SettingWorldFoV, float* Setting1stPersonFoV, float FoV) { void(__cdecl* UpdateParticleShaderFoVData)(float) = (void(__cdecl*)(float))0x007B70E0; WorldSceneGraph->SetCameraFOV(FoV); UpdateParticleShaderFoVData(FoV); worldFoV = *SettingWorldFoV = *Setting1stPersonFoV = FoV; }
+	void			SetFoV(SceneGraph* WorldSceneGraph, float* SettingWorldFoV, float* Setting1stPersonFoV, float FoV) { WorldSceneGraph->SetCameraFOV(FoV); worldFoV = *SettingWorldFoV = *Setting1stPersonFoV = FoV; }
 	float			GetFoV(bool IsSpecialView) { return worldFoV; }
 	bool			IsThirdPersonView(bool CameraMode, bool FirstPersonView) { return (!CameraMode ? isThirdPerson : !FirstPersonView); }
 	bool			IsVanityView() { return *(bool*)0x00B3BB04; }
@@ -11774,7 +11779,7 @@ assert(sizeof(PlayerSkills) == 0x04);
 class PlayerCharacter : public Character {
 public:
 	void				RestoreCamera() { ThisCall(0x00730EE0, this, 0); }
-	void				SetFoV(SceneGraph* WorldSceneGraph, float* SettingWorldFoV, float* Setting1stPersonFoV, float FoV) { void(__cdecl * UpdateParticleShaderFoVData)(float) = (void(__cdecl*)(float))0x00C71820; PlayerCamera* Camera = PlayerCamera::Get(); WorldSceneGraph->SetCameraFOV(FoV); UpdateParticleShaderFoVData(FoV); Camera->worldFoV = Camera->firstPersonFoV = *SettingWorldFoV = *Setting1stPersonFoV = FoV; }
+	void				SetFoV(SceneGraph* WorldSceneGraph, float* SettingWorldFoV, float* Setting1stPersonFoV, float FoV) { PlayerCamera* Camera = PlayerCamera::Get(); WorldSceneGraph->SetCameraFOV(FoV); Camera->worldFoV = Camera->firstPersonFoV = *SettingWorldFoV = *Setting1stPersonFoV = FoV; }
 	float				GetFoV(bool IsSpecialView) { PlayerCamera* Camera = PlayerCamera::Get(); return (IsSpecialView ? Camera->firstPersonFoV : Camera->worldFoV); }
 	bool				IsThirdPersonView(bool CameraMode, bool FirstPersonView) { return (!CameraMode ? PlayerCamera::Get()->cameraState->stateId == TESCameraState::CameraState::kCameraState_ThirdPerson2 : !FirstPersonView); }
 	bool				IsVanityView() { return false; }

@@ -28,7 +28,7 @@ void RenderManager::GetSceneCameraData() {
 void RenderManager::SetupSceneCamera() {
 
 	NiCamera* Camera = WorldSceneGraph->camera;
-	
+
 	if (Camera) {
 		NiPoint3 Forward = { 0.0f, 0.0f, 0.0f };
 		NiPoint3 Up = { 0.0f, 0.0f, 0.0f };
@@ -160,7 +160,7 @@ void RenderManager::SetSceneGraph() {
 
 void RenderManager::Initialize() {
 
-	IDirect3D9* D3D;
+	IDirect3D9* D3D = NULL;
 	D3DDISPLAYMODE currentDisplayMode;
 
 	Logger::Log("Extending the render manager...");

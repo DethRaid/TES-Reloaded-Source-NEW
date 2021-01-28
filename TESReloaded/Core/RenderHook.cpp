@@ -60,6 +60,7 @@ public:
 	void	TrackRender(BSRenderedTexture*, int, int);
 	void	TrackRenderWorldSceneGraph(Sun*, UInt8, UInt8, UInt8);
 	void	TrackRenderFirstPerson(NiDX9Renderer*, NiGeometry*, Sun*, BSRenderedTexture*);
+	void	TrackRenderPipboyScreen(NiGeometry*, NiDX9Renderer*);
 	float	TrackGetWaterHeightLOD();
 #elif defined (OBLIVION)
 	void*	TrackShowDetectorWindow(HWND, HINSTANCE, NiNode*, char*, int, int, int, int);
@@ -177,6 +178,15 @@ void RenderHook::TrackRenderFirstPerson(NiDX9Renderer* Renderer, NiGeometry* Geo
 	TheRenderManager->Clear(NULL, NiRenderer::kClear_ZBUFFER);
 	ThisCall(0x00874C10, Global);
 	(this->*RenderFirstPerson)(Renderer, Geo, SkySun, RenderedTexture);
+
+}
+
+void (__thiscall RenderHook::* RenderPipboyScreen)(NiGeometry*, NiDX9Renderer*);
+void (__thiscall RenderHook::* TrackRenderPipboyScreen)(NiGeometry*, NiDX9Renderer*);
+void RenderHook::TrackRenderPipboyScreen(NiGeometry* Geo, NiDX9Renderer* Renderer) {
+	
+	WorldSceneGraph->SetCameraFOV(Player->firstPersonFoV);
+	(this->*RenderPipboyScreen)(Geo, Renderer);
 
 }
 
@@ -656,6 +666,8 @@ void CreateRenderHook() {
 	TrackRenderWorldSceneGraph				= &RenderHook::TrackRenderWorldSceneGraph;
 	*((int*)&RenderFirstPerson)				= 0x00875110;
 	TrackRenderFirstPerson					= &RenderHook::TrackRenderFirstPerson;
+	*((int*)&RenderPipboyScreen)			= 0x008761E0;
+	TrackRenderPipboyScreen					= &RenderHook::TrackRenderPipboyScreen;
 	*((int*)&GetWaterHeightLOD)				= 0x0045CD80;
 	TrackGetWaterHeightLOD					= &RenderHook::TrackGetWaterHeightLOD;
 #elif defined(OBLIVION)
@@ -693,6 +705,7 @@ void CreateRenderHook() {
 	DetourAttach(&(PVOID&)ShowDetectorWindow,			*((PVOID*)&TrackShowDetectorWindow));
 	DetourAttach(&(PVOID&)RenderWorldSceneGraph,		*((PVOID*)&TrackRenderWorldSceneGraph));
 	DetourAttach(&(PVOID&)RenderFirstPerson,			*((PVOID*)&TrackRenderFirstPerson));
+	DetourAttach(&(PVOID&)RenderPipboyScreen,			*((PVOID*)&TrackRenderPipboyScreen));
 	DetourAttach(&(PVOID&)GetWaterHeightLOD,			*((PVOID*)&TrackGetWaterHeightLOD));
 	DetourAttach(&(PVOID&)SetupRenderingPass,					  &TrackSetupRenderingPass);
 	DetourAttach(&(PVOID&)SetShaderPackage,						  &TrackSetShaderPackage);
@@ -726,8 +739,8 @@ void CreateRenderHook() {
 #if defined(NEWVEGAS)
 	WriteRelJump(0x004E4C3B, 0x004E4C42); // Fixes reflections when cell water height is not like worldspace water height
 	WriteRelJump(0x004E4DA4, 0x004E4DAC); // Fixes reflections on distant water
-	WriteRelCall(0x00875B86, 0x00710AB0); // Fixes a bug (the world fov is not restored after the first person rendering)
-	WriteRelCall(0x00875B9D, 0x00710AB0); // Fixes a bug (the world fov is not restored after the first person rendering)
+	WriteRelCall(0x00875B86, 0x00710AB0); // Sets the world fov at the end of 1st person rendering instead of 1st person fov
+	WriteRelCall(0x00875B9D, 0x00710AB0); // Sets the world fov at the end of 1st person rendering instead of 1st person fov
 	WriteRelCall(kMultiBoundWaterHeightFix1,	(UInt32)MultiBoundWaterHeightFix);
 	WriteRelCall(kMultiBoundWaterHeightFix2,	(UInt32)MultiBoundWaterHeightFix);
 	if (TheSettingManager->SettingsMain.Main.ReplaceIntro) WriteRelJump(kSetTileShaderConstants, (UInt32)SetTileShaderConstants);
