@@ -1063,6 +1063,7 @@ void SettingManager::LoadSettings() {
 	SettingsShadows.Exteriors.Darkness = atof(value);
 	GetPrivateProfileStringA("Exteriors", "ShadowMapFarPlane", "8192.0", value, SettingStringBuffer, Filename);
 	SettingsShadows.Exteriors.ShadowMapFarPlane = atof(value);
+	SettingsShadows.Exteriors.EnableReflectanceShadowMapping = GetPrivateProfileIntA("Exteriors", "GlobalIllumination", 1, Filename);
 
 	SettingsShadows.Interiors.Enabled = GetPrivateProfileIntA("Interiors", "Enabled", 1, Filename);
 	SettingsShadows.Interiors.AlphaEnabled = GetPrivateProfileIntA("Interiors", "AlphaEnabled", 1, Filename);
@@ -1323,6 +1324,7 @@ void SettingManager::SaveSettings(const char* Item, const char* Definition) {
 			strcat(Filename, "Shadows\\Shadows.ini");
 			WritePrivateProfileStringA("Exteriors", "Darkness", ToString(SettingsShadows.Exteriors.Darkness).c_str(), Filename);
 			WritePrivateProfileStringA("Exteriors", "Quality", ToString(SettingsShadows.Exteriors.Quality).c_str(), Filename);
+			WritePrivateProfileStringA("Exteriors", "GlobalIllumination", ToString(SettingsShadows.Exteriors.EnableReflectanceShadowMapping).c_str(), Filename);
 			WritePrivateProfileStringA("ExteriorsNear", "Enabled", ToString(SettingsShadows.Exteriors.Enabled[ShadowManager::ShadowMapTypeEnum::MapNear]).c_str(), Filename);
 			WritePrivateProfileStringA("ExteriorsNear", "AlphaEnabled", ToString(SettingsShadows.Exteriors.AlphaEnabled[ShadowManager::ShadowMapTypeEnum::MapNear]).c_str(), Filename);
 			WritePrivateProfileStringA("ExteriorsFar", "Enabled", ToString(SettingsShadows.Exteriors.Enabled[ShadowManager::ShadowMapTypeEnum::MapFar]).c_str(), Filename);
@@ -1865,6 +1867,7 @@ SettingsList SettingManager::GetMenuSettings(const char* Item, const char* Defin
 		}
 		else if (!strcmp(Definition, "Shadows")) {
 			if (!strcmp(Section, "Exteriors")) {
+				Settings["Global Illumination"] = SettingsShadows.Exteriors.EnableReflectanceShadowMapping;
 				Settings["Darkness"] = SettingsShadows.Exteriors.Darkness;
 				Settings["Quality"] = SettingsShadows.Exteriors.Quality;
 			}
@@ -2485,6 +2488,9 @@ void SettingManager::SetMenuSetting(const char* Item, const char* Definition, co
 					SettingsShadows.Exteriors.Quality = Value;
 					// Special case for forward or post-process shadowing
 					TheShaderManager->SwitchShaderStatus("ShadowsExteriors");
+				}
+				else if (!strcmp(Setting, "GlobalIllumination")) {
+					SettingsShadows.Exteriors.EnableReflectanceShadowMapping = Value;
 				}
 			}
 			else if (!strcmp(Section, "ExteriorsNear")) {
