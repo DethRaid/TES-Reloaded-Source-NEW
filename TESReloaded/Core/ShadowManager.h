@@ -61,6 +61,14 @@ public:
 	TESObjectCELL*			CurrentCell;
 	ShadowCubeMapStateEnum	ShadowCubeMapState;
 	bool					AlphaEnabled;
+	
+private:
+	IDirect3DTexture9* ShadowGbufferColorSpecular[3];
+	IDirect3DSurface9* ShadowGbufferColorSpecularSurface[3];
+	IDirect3DTexture9* ShadowGbufferNormalGlossiness[3];
+	IDirect3DSurface9* ShadowGbufferNormalGlossinessSurface[3];
+
+	void CreateShadowTexture(int Index, SettingsShadowStruct::ExteriorsStruct* ShadowsExteriors, IDirect3DDevice9* Device);
 };
 
 void CreateShadowsHook();

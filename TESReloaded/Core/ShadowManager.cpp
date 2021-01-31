@@ -67,11 +67,7 @@ ShadowManager::ShadowManager() {
 	if (ShadowCubeMapPixel->LoadShader("ShadowCubeMap.pso")) Device->CreatePixelShader((const DWORD*)ShadowCubeMapPixel->Function, &ShadowCubeMapPixelShader);
 
 	for (int i = 0; i < 3; i++) {
-		UINT ShadowMapSize = ShadowsExteriors->ShadowMapSize[i];
-		Device->CreateTexture(ShadowMapSize, ShadowMapSize, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R32F, D3DPOOL_DEFAULT, &ShadowMapTexture[i], NULL);
-		ShadowMapTexture[i]->GetSurfaceLevel(0, &ShadowMapSurface[i]);
-		Device->CreateDepthStencilSurface(ShadowMapSize, ShadowMapSize, D3DFMT_D24S8, D3DMULTISAMPLE_NONE, 0, true, &ShadowMapDepthSurface[i], NULL);
-		ShadowMapViewPort[i] = { 0, 0, ShadowMapSize, ShadowMapSize, 0.0f, 1.0f };
+		CreateShadowTexture(i, ShadowsExteriors, Device);
 	}
 	for (int i = 0; i < 4; i++) {
 		Device->CreateCubeTexture(ShadowCubeMapSize, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R32F, D3DPOOL_DEFAULT, &ShadowCubeMapTexture[i], NULL);
@@ -387,10 +383,18 @@ void ShadowManager::RenderShadowMap(ShadowMapTypeEnum ShadowMapType, SettingsSha
 	BillboardRight = { View._11, View._21, View._31, 0.0f };
 	BillboardUp = { View._12, View._22, View._32, 0.0f };
 	GetFrustum(ShadowMapType, &TheShaderManager->ShaderConst.ShadowMap.ShadowViewProj);
+	
 	Device->SetRenderTarget(0, ShadowMapSurface[ShadowMapType]);
+	if (ShadowsExteriors->EnableReflectanceShadowMapping) {
+		Device->SetRenderTarget(1, ShadowGbufferColorSpecularSurface[ShadowMapType]);
+		Device->SetRenderTarget(2, ShadowGbufferNormalGlossinessSurface[ShadowMapType]);
+	}
 	Device->SetDepthStencilSurface(ShadowMapDepthSurface[ShadowMapType]);
+
 	Device->SetViewport(&ShadowMapViewPort[ShadowMapType]);
+
 	Device->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DXCOLOR(1.0f, 0.25f, 0.25f, 0.55f), 1.0f, 0L);
+
 	if (ShadowsExteriors->Enabled[ShadowMapType] && SunDir->z > 0.0f) {
 		RenderState->SetRenderState(D3DRS_ZENABLE, D3DZB_TRUE, RenderStateArgs);
 		RenderState->SetRenderState(D3DRS_ZWRITEENABLE, 1, RenderStateArgs);
@@ -664,6 +668,45 @@ void ShadowManager::CalculateBlend(NiPointLight** Lights, int LightIndex) {
 		if (ShadowCubeMapBlend->w < 1.0f) ShadowCubeMapBlend->w += 0.1f;
 	}
 	
+}
+
+void ShadowManager::CreateShadowTexture(int Index, SettingsShadowStruct::ExteriorsStruct* ShadowsExteriors, IDirect3DDevice9* Device) {
+	const UINT ShadowMapSize = ShadowsExteriors->ShadowMapSize[Index];
+
+	// Depth texture
+	// TODO: Why do we have a separate texture for depth instead of like using the depth buffer?
+	Device->CreateTexture(ShadowMapSize, ShadowMapSize, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R32F, D3DPOOL_DEFAULT, &ShadowMapTexture[Index], NULL);
+	ShadowMapTexture[Index]->GetSurfaceLevel(0, &ShadowMapSurface[Index]);
+
+	if(ShadowsExteriors->EnableReflectanceShadowMapping)
+	{
+		// Shadow gbuffer color/specular texture
+		Device->CreateTexture(
+			ShadowMapSize, ShadowMapSize, 
+			1,
+			D3DUSAGE_RENDERTARGET,
+			D3DFMT_A8R8G8B8,
+			D3DPOOL_DEFAULT,
+			&ShadowGbufferColorSpecular[Index], 
+			nullptr);
+		ShadowGbufferColorSpecular[Index]->GetSurfaceLevel(0, &ShadowGbufferColorSpecularSurface[Index]);
+
+		// Shadow gbuffer normals/glossiness texture
+		Device->CreateTexture(
+			ShadowMapSize,
+			ShadowMapSize,
+			1,
+			D3DUSAGE_RENDERTARGET,
+			D3DFMT_A8R8G8B8,
+			D3DPOOL_DEFAULT,
+			&ShadowGbufferNormalGlossiness[Index],
+			nullptr);
+		ShadowGbufferNormalGlossiness[Index]->GetSurfaceLevel(0, &ShadowGbufferNormalGlossinessSurface[Index]);
+	}
+
+	// Depth buffer
+	Device->CreateDepthStencilSurface(ShadowMapSize, ShadowMapSize, D3DFMT_D24S8, D3DMULTISAMPLE_NONE, 0, true, &ShadowMapDepthSurface[Index], NULL);
+	ShadowMapViewPort[Index] = { 0, 0, ShadowMapSize, ShadowMapSize, 0.0f, 1.0f };
 }
 
 static __declspec(naked) void RenderShadowMapHook() {
