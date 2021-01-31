@@ -68,7 +68,11 @@ struct ShaderConstants {
 		D3DXVECTOR4		SkinColor;
 	};
 	struct ShadowStruct {
+		// X: Type of geo (0 normal, 1 skinned actors, 2 speedtree leaves)
+		// Y: Alpha control
+		// Z: 1 if RSM is enabled, 0 if it is not
 		D3DXVECTOR4		Data;
+		
 		D3DXVECTOR4		OrthoData;
 	};
 	struct PrecipitationsStruct {

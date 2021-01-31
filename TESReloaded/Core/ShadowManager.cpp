@@ -282,20 +282,58 @@ void ShadowManager::Render(NiGeometry* Geo) {
 		else {
 			BSShaderProperty* LProp = (BSShaderProperty*)Geo->GetProperty(NiProperty::PropertyType::kType_Lighting);
 			if (LProp->IsLightingProperty()) {
-				if (AlphaEnabled) {
-					NiAlphaProperty* AProp = (NiAlphaProperty*)Geo->GetProperty(NiProperty::PropertyType::kType_Alpha);
-					if (AProp->flags & NiAlphaProperty::AlphaFlags::ALPHA_BLEND_MASK || AProp->flags & NiAlphaProperty::AlphaFlags::TEST_ENABLE_MASK) {
-						if (NiTexture* Texture = *((BSShaderPPLightingProperty*)LProp)->textures[0]) {
-							TheShaderManager->ShaderConst.Shadow.Data.y = 1.0f;
-							RenderState->SetTexture(0, Texture->rendererData->dTexture);
-							RenderState->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP, false);
-							RenderState->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP, false);
-							RenderState->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT, false);
-							RenderState->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT, false);
-							RenderState->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_POINT, false);
+				const auto& SettingsExteriors = TheSettingManager->SettingsShadows.Exteriors;
+				if (SettingsExteriors.EnableReflectanceShadowMapping) {
+					// TODO: I probably need to sort by texture in order to avoid death by texture binds?
+					
+					// Diffuse texture
+					if (NiTexture* Texture = *static_cast<BSShaderPPLightingProperty*>(LProp)->textures[0]) {
+						TheShaderManager->ShaderConst.Shadow.Data.y = 1.0f;
+						RenderState->SetTexture(0, Texture->rendererData->dTexture);
+						RenderState->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP, false);
+						RenderState->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP, false);
+						RenderState->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT, false);
+						RenderState->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT, false);
+						RenderState->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_POINT, false);
+					}
+
+					// Normals texture
+					if (NiTexture* Texture = *static_cast<BSShaderPPLightingProperty*>(LProp)->textures[1]) {
+						RenderState->SetTexture(1, Texture->rendererData->dTexture);
+						RenderState->SetSamplerState(1, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP, false);
+						RenderState->SetSamplerState(1, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP, false);
+						RenderState->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_POINT, false);
+						RenderState->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_POINT, false);
+						RenderState->SetSamplerState(1, D3DSAMP_MIPFILTER, D3DTEXF_POINT, false);
+					}
+
+					// Glow texture
+					if (NiTexture* Texture = *static_cast<BSShaderPPLightingProperty*>(LProp)->textures[2]) {
+						RenderState->SetTexture(2, Texture->rendererData->dTexture);
+						RenderState->SetSamplerState(2, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP, false);
+						RenderState->SetSamplerState(2, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP, false);
+						RenderState->SetSamplerState(2, D3DSAMP_MAGFILTER, D3DTEXF_POINT, false);
+						RenderState->SetSamplerState(2, D3DSAMP_MINFILTER, D3DTEXF_POINT, false);
+						RenderState->SetSamplerState(2, D3DSAMP_MIPFILTER, D3DTEXF_POINT, false);
+					}
+				}
+				else {
+					if (AlphaEnabled) {
+						NiAlphaProperty* AProp = (NiAlphaProperty*)Geo->GetProperty(NiProperty::PropertyType::kType_Alpha);
+						if (AProp->flags & NiAlphaProperty::AlphaFlags::ALPHA_BLEND_MASK || AProp->flags & NiAlphaProperty::AlphaFlags::TEST_ENABLE_MASK) {
+							if (NiTexture* Texture = *((BSShaderPPLightingProperty*)LProp)->textures[0]) {
+								TheShaderManager->ShaderConst.Shadow.Data.y = 1.0f;
+								RenderState->SetTexture(0, Texture->rendererData->dTexture);
+								RenderState->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP, false);
+								RenderState->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP, false);
+								RenderState->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT, false);
+								RenderState->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT, false);
+								RenderState->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_POINT, false);
+							}
 						}
 					}
 				}
+				
 			}
 			else {
 				return;
@@ -515,8 +553,7 @@ void ShadowManager::RenderShadowCubeMap(NiPointLight** Lights, int LightIndex, S
 
 }
 
-void ShadowManager::RenderShadowMaps() {
-	
+void ShadowManager::RenderShadowMaps() {	
 	SettingsMainStruct::EquipmentModeStruct* EquipmentModeSettings = &TheSettingManager->SettingsMain.EquipmentMode;
 	SettingsShadowStruct::ExteriorsStruct* ShadowsExteriors = &TheSettingManager->SettingsShadows.Exteriors;
 	SettingsShadowStruct::InteriorsStruct* ShadowsInteriors = &TheSettingManager->SettingsShadows.Interiors;
@@ -539,7 +576,7 @@ void ShadowManager::RenderShadowMaps() {
 		SetTextureCanopyMap(CreateNiRenderedTexture(1, 1, TheRenderManager, &FP));
 	}
 #endif
-
+	
 	Device->GetDepthStencilSurface(&DepthSurface);
 	TheRenderManager->SetupSceneCamera();
 	if (Player->GetWorldSpace()) {
@@ -555,6 +592,8 @@ void ShadowManager::RenderShadowMaps() {
 		At.x = PlayerNode->m_worldTransform.pos.x - TheRenderManager->CameraPosition.x;
 		At.y = PlayerNode->m_worldTransform.pos.y - TheRenderManager->CameraPosition.y;
 		At.z = PlayerNode->m_worldTransform.pos.z - TheRenderManager->CameraPosition.z;
+
+		ShadowData->z = ShadowsExteriors->EnableReflectanceShadowMapping ? 1.f : 0.f;
 
 		RenderShadowMap(MapNear, ShadowsExteriors, &At, SunDir);
 		RenderShadowMap(MapFar, ShadowsExteriors, &At, SunDir);
