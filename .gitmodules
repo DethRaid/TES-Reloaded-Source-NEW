@@ -1,0 +1,6 @@
+[submodule "TESReloaded/Extern/tracy"]
+	path = TESReloaded/Extern/tracy
+	url = https://github.com/wolfpld/tracy.git
+[submodule "TESReloaded/Extern/dxsdk"]
+	path = TESReloaded/Extern/dxsdk
+	url = https://github.com/apitrace/dxsdk.git
