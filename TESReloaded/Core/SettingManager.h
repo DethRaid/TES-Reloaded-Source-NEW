@@ -328,7 +328,6 @@ struct SettingsShadowStruct {
 		float				Darkness;
 		float				ShadowMapRadius[3];
 		float				ShadowMapFarPlane;
-		bool				EnableReflectanceShadowMapping;
 		ExcludedFormsList	ExcludedForms;
 	};
 	

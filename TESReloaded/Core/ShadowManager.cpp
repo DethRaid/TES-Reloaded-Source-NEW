@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <cmath>
-#include <Tracy.hpp>
 #if defined(NEWVEGAS)
 #define RenderStateArgs 0, 0
 #define kRockParams 0x01200658
@@ -45,11 +44,9 @@ static const void* VFTNiTriStrips = (void*)0x00A7F27C;
 #if defined(NEWVEGAS) || defined(OBLIVION)
 ShadowManager::ShadowManager() {
 
-	ZoneScoped;
-
 	Logger::Log("Starting the shadows manager...");
 	TheShadowManager = this;
-	
+
 	IDirect3DDevice9* Device = TheRenderManager->device;
 	SettingsShadowStruct::ExteriorsStruct* ShadowsExteriors = &TheSettingManager->SettingsShadows.Exteriors;
 	SettingsShadowStruct::InteriorsStruct* ShadowsInteriors = &TheSettingManager->SettingsShadows.Interiors;
@@ -70,7 +67,11 @@ ShadowManager::ShadowManager() {
 	if (ShadowCubeMapPixel->LoadShader("ShadowCubeMap.pso")) Device->CreatePixelShader((const DWORD*)ShadowCubeMapPixel->Function, &ShadowCubeMapPixelShader);
 
 	for (int i = 0; i < 3; i++) {
-		CreateShadowTexture(i, ShadowsExteriors, Device);
+		UINT ShadowMapSize = ShadowsExteriors->ShadowMapSize[i];
+		Device->CreateTexture(ShadowMapSize, ShadowMapSize, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R32F, D3DPOOL_DEFAULT, &ShadowMapTexture[i], NULL);
+		ShadowMapTexture[i]->GetSurfaceLevel(0, &ShadowMapSurface[i]);
+		Device->CreateDepthStencilSurface(ShadowMapSize, ShadowMapSize, D3DFMT_D24S8, D3DMULTISAMPLE_NONE, 0, true, &ShadowMapDepthSurface[i], NULL);
+		ShadowMapViewPort[i] = { 0, 0, ShadowMapSize, ShadowMapSize, 0.0f, 1.0f };
 	}
 	for (int i = 0; i < 4; i++) {
 		Device->CreateCubeTexture(ShadowCubeMapSize, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R32F, D3DPOOL_DEFAULT, &ShadowCubeMapTexture[i], NULL);
@@ -80,7 +81,7 @@ ShadowManager::ShadowManager() {
 	}
 	Device->CreateDepthStencilSurface(ShadowCubeMapSize, ShadowCubeMapSize, D3DFMT_D24S8, D3DMULTISAMPLE_NONE, 0, true, &ShadowCubeMapDepthSurface, NULL);
 	ShadowCubeMapViewPort = { 0, 0, ShadowCubeMapSize, ShadowCubeMapSize, 0.0f, 1.0f };
-	
+
 	ShadowCubeMapLights[4] = { NULL };
 
 }
@@ -144,7 +145,7 @@ void ShadowManager::GetFrustum(ShadowMapTypeEnum ShadowMapType, D3DMATRIX* Matri
 }
 
 TESObjectREFR* ShadowManager::GetRef(TESObjectREFR* Ref, SettingsShadowStruct::FormsStruct* Forms, SettingsShadowStruct::ExcludedFormsList* ExcludedForms) {
-	
+
 	TESObjectREFR* r = NULL;
 
 	if (Ref && Ref->GetNode()) {
@@ -182,14 +183,14 @@ TESObjectREFR* ShadowManager::GetRefO(TESObjectREFR* Ref) {
 }
 
 bool ShadowManager::InFrustum(ShadowMapTypeEnum ShadowMapType, NiAVObject* Object) {
-	
+
 	float Distance = 0.0f;
 	bool R = false;
 	NiBound* Bound = Object->GetWorldBound();
 
 	if (Bound) {
 		D3DXVECTOR3 Position = { Bound->Center.x - TheRenderManager->CameraPosition.x, Bound->Center.y - TheRenderManager->CameraPosition.y, Bound->Center.z - TheRenderManager->CameraPosition.z };
-		
+
 		R = true;
 		for (int i = 0; i < 6; ++i) {
 			Distance = D3DXPlaneDotCoord(&ShadowMapFrustum[ShadowMapType][i], &Position);
@@ -244,8 +245,6 @@ void ShadowManager::RenderObject(NiAVObject* Object, bool HasWater) {
 
 void ShadowManager::Render(NiGeometry* Geo) {
 
-	ZoneScoped;
-	
 	IDirect3DDevice9* Device = TheRenderManager->device;
 	NiDX9RenderState* RenderState = TheRenderManager->renderState;
 	int StartIndex = 0;
@@ -257,7 +256,7 @@ void ShadowManager::Render(NiGeometry* Geo) {
 	NiD3DShaderDeclaration* ShaderDeclaration = Geo->shader->ShaderDeclaration;
 
 	if (Geo->m_pcName && !memcmp(Geo->m_pcName, "Torch", 5)) return; // No torch geo, it is too near the light and a bad square is rendered.
-	
+
 	TheShaderManager->ShaderConst.Shadow.Data.x = 0.0f; // Type of geo (0 normal, 1 actors (skinned), 2 speedtree leaves)
 	TheShaderManager->ShaderConst.Shadow.Data.y = 0.0f; // Alpha control
 	if (GeoData) {
@@ -368,8 +367,6 @@ void ShadowManager::Render(NiGeometry* Geo) {
 
 void ShadowManager::RenderShadowMap(ShadowMapTypeEnum ShadowMapType, SettingsShadowStruct::ExteriorsStruct* ShadowsExteriors, D3DXVECTOR3* At, D3DXVECTOR4* SunDir) {
 
-	ZoneScoped;
-
 	IDirect3DDevice9* Device = TheRenderManager->device;
 	NiDX9RenderState* RenderState = TheRenderManager->renderState;
 	float FarPlane = ShadowsExteriors->ShadowMapFarPlane;
@@ -390,18 +387,10 @@ void ShadowManager::RenderShadowMap(ShadowMapTypeEnum ShadowMapType, SettingsSha
 	BillboardRight = { View._11, View._21, View._31, 0.0f };
 	BillboardUp = { View._12, View._22, View._32, 0.0f };
 	GetFrustum(ShadowMapType, &TheShaderManager->ShaderConst.ShadowMap.ShadowViewProj);
-	
 	Device->SetRenderTarget(0, ShadowMapSurface[ShadowMapType]);
-	if (ShadowsExteriors->EnableReflectanceShadowMapping) {
-		Device->SetRenderTarget(1, ShadowGbufferColorSpecularSurface[ShadowMapType]);
-		Device->SetRenderTarget(2, ShadowGbufferNormalGlossinessSurface[ShadowMapType]);
-	}
 	Device->SetDepthStencilSurface(ShadowMapDepthSurface[ShadowMapType]);
-
 	Device->SetViewport(&ShadowMapViewPort[ShadowMapType]);
-
 	Device->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DXCOLOR(1.0f, 0.25f, 0.25f, 0.55f), 1.0f, 0L);
-
 	if (ShadowsExteriors->Enabled[ShadowMapType] && SunDir->z > 0.0f) {
 		RenderState->SetRenderState(D3DRS_ZENABLE, D3DZB_TRUE, RenderStateArgs);
 		RenderState->SetRenderState(D3DRS_ZWRITEENABLE, 1, RenderStateArgs);
@@ -431,8 +420,6 @@ void ShadowManager::RenderShadowMap(ShadowMapTypeEnum ShadowMapType, SettingsSha
 
 void ShadowManager::RenderShadowCubeMap(NiPointLight** Lights, int LightIndex, SettingsShadowStruct::InteriorsStruct* ShadowsInteriors) {
 
-	ZoneScoped;
-
 	IDirect3DDevice9* Device = TheRenderManager->device;
 	NiDX9RenderState* RenderState = TheRenderManager->renderState;
 	D3DXMATRIX View, Proj;
@@ -452,18 +439,18 @@ void ShadowManager::RenderShadowCubeMap(NiPointLight** Lights, int LightIndex, S
 		TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapLightPosition.w = TheShaderManager->ShaderConst.ShadowMap.ShadowLightPosition[L].w = 1.0f;
 		TheShaderManager->ShaderConst.Shadow.Data.z = FarPlane;
 		switch (L) {
-			case 0:
-				TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapFarPlanes.x = FarPlane;
-				break;
-			case 1:
-				TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapFarPlanes.y = FarPlane;
-				break;
-			case 2:
-				TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapFarPlanes.z = FarPlane;
-				break;
-			case 3:
-				TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapFarPlanes.w = FarPlane;
-				break;
+		case 0:
+			TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapFarPlanes.x = FarPlane;
+			break;
+		case 1:
+			TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapFarPlanes.y = FarPlane;
+			break;
+		case 2:
+			TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapFarPlanes.z = FarPlane;
+			break;
+		case 3:
+			TheShaderManager->ShaderConst.ShadowMap.ShadowCubeMapFarPlanes.w = FarPlane;
+			break;
 		}
 		D3DXMatrixPerspectiveFovRH(&Proj, D3DXToRadian(90.0f), 1.0f, 1.0f, FarPlane);
 		for (int Face = 0; Face < 6; Face++) {
@@ -471,30 +458,30 @@ void ShadowManager::RenderShadowCubeMap(NiPointLight** Lights, int LightIndex, S
 			At.y = Eye.y;
 			At.z = Eye.z;
 			switch (Face) {
-				case D3DCUBEMAP_FACE_POSITIVE_X:
-					At += D3DXVECTOR3(1.0f, 0.0f, 0.0f);
-					Up = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
-					break;
-				case D3DCUBEMAP_FACE_NEGATIVE_X:
-					At += D3DXVECTOR3(-1.0f, 0.0f, 0.0f);
-					Up = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
-					break;
-				case D3DCUBEMAP_FACE_POSITIVE_Y:
-					At += D3DXVECTOR3(0.0f, 1.0f, 0.0f);
-					Up = D3DXVECTOR3(0.0f, 0.0f, 1.0f);
-					break;
-				case D3DCUBEMAP_FACE_NEGATIVE_Y:
-					At += D3DXVECTOR3(0.0f, -1.0f, 0.0f);
-					Up = D3DXVECTOR3(0.0f, 0.0f, -1.0f);
-					break;
-				case D3DCUBEMAP_FACE_POSITIVE_Z:
-					At += D3DXVECTOR3(0.0f, 0.0f, -1.0f);
-					Up = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
-					break;
-				case D3DCUBEMAP_FACE_NEGATIVE_Z:
-					At += D3DXVECTOR3(0.0f, 0.0f, 1.0f);
-					Up = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
-					break;
+			case D3DCUBEMAP_FACE_POSITIVE_X:
+				At += D3DXVECTOR3(1.0f, 0.0f, 0.0f);
+				Up = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
+				break;
+			case D3DCUBEMAP_FACE_NEGATIVE_X:
+				At += D3DXVECTOR3(-1.0f, 0.0f, 0.0f);
+				Up = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
+				break;
+			case D3DCUBEMAP_FACE_POSITIVE_Y:
+				At += D3DXVECTOR3(0.0f, 1.0f, 0.0f);
+				Up = D3DXVECTOR3(0.0f, 0.0f, 1.0f);
+				break;
+			case D3DCUBEMAP_FACE_NEGATIVE_Y:
+				At += D3DXVECTOR3(0.0f, -1.0f, 0.0f);
+				Up = D3DXVECTOR3(0.0f, 0.0f, -1.0f);
+				break;
+			case D3DCUBEMAP_FACE_POSITIVE_Z:
+				At += D3DXVECTOR3(0.0f, 0.0f, -1.0f);
+				Up = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
+				break;
+			case D3DCUBEMAP_FACE_NEGATIVE_Z:
+				At += D3DXVECTOR3(0.0f, 0.0f, 1.0f);
+				Up = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
+				break;
 			}
 			D3DXMatrixLookAtRH(&View, &Eye, &At, &Up);
 			TheShaderManager->ShaderConst.ShadowMap.ShadowViewProj = View * Proj;
@@ -526,8 +513,6 @@ void ShadowManager::RenderShadowCubeMap(NiPointLight** Lights, int LightIndex, S
 
 void ShadowManager::RenderShadowMaps() {
 
-	ZoneScoped;
-
 	SettingsMainStruct::EquipmentModeStruct* EquipmentModeSettings = &TheSettingManager->SettingsMain.EquipmentMode;
 	SettingsShadowStruct::ExteriorsStruct* ShadowsExteriors = &TheSettingManager->SettingsShadows.Exteriors;
 	SettingsShadowStruct::InteriorsStruct* ShadowsInteriors = &TheSettingManager->SettingsShadows.Interiors;
@@ -544,8 +529,8 @@ void ShadowManager::RenderShadowMaps() {
 	// By now i cannot disable the canopy map pass in Oblivion.ini otherwise the game changes the shaders used for the rendering.
 	NiRenderedTexture* CanopyMap = *(NiRenderedTexture**)0x00B4310C;
 	if (!CanopyMap) {
-		NiRenderedTexture* (__cdecl * CreateNiRenderedTexture)(UInt32, UInt32, NiRenderer*, NiTexture::FormatPrefs*) = (NiRenderedTexture* (__cdecl *)(UInt32, UInt32, NiRenderer*, NiTexture::FormatPrefs*))0x0072A9B0;
-		void (__cdecl * SetTextureCanopyMap)(NiRenderedTexture*) = (void (__cdecl *)(NiRenderedTexture*))0x00441850;
+		NiRenderedTexture* (__cdecl * CreateNiRenderedTexture)(UInt32, UInt32, NiRenderer*, NiTexture::FormatPrefs*) = (NiRenderedTexture * (__cdecl*)(UInt32, UInt32, NiRenderer*, NiTexture::FormatPrefs*))0x0072A9B0;
+		void(__cdecl * SetTextureCanopyMap)(NiRenderedTexture*) = (void(__cdecl*)(NiRenderedTexture*))0x00441850;
 		NiTexture::FormatPrefs FP = { NiRenderedTexture::PixelLayout::kPixelLayout_TrueColor32, NiRenderedTexture::AlphaFormat::kAlpha_Smooth, NiRenderedTexture::MipMapFlag::kMipMap_Default };
 		SetTextureCanopyMap(CreateNiRenderedTexture(1, 1, TheRenderManager, &FP));
 	}
@@ -580,7 +565,7 @@ void ShadowManager::RenderShadowMaps() {
 		}
 		ShadowData->z = 1.0f / (float)ShadowsExteriors->ShadowMapSize[MapNear];
 		ShadowData->w = 1.0f / (float)ShadowsExteriors->ShadowMapSize[MapFar];
-		
+
 		OrthoData->z = 1.0f / (float)ShadowsExteriors->ShadowMapSize[MapOrtho];
 	}
 	else {
@@ -642,7 +627,7 @@ void ShadowManager::ClearShadowCubeMaps(IDirect3DDevice9* Device, int From, Shad
 		}
 		ShadowCubeMapState = NewState;
 	}
-	
+
 }
 
 void ShadowManager::CalculateBlend(NiPointLight** Lights, int LightIndex) {
@@ -678,49 +663,7 @@ void ShadowManager::CalculateBlend(NiPointLight** Lights, int LightIndex) {
 		if (ShadowCubeMapBlend->z < 1.0f) ShadowCubeMapBlend->z += 0.1f;
 		if (ShadowCubeMapBlend->w < 1.0f) ShadowCubeMapBlend->w += 0.1f;
 	}
-	
-}
 
-void ShadowManager::CreateShadowTexture(int Index, SettingsShadowStruct::ExteriorsStruct* ShadowsExteriors, IDirect3DDevice9* Device) {
-
-	ZoneScoped;
-
-	const UINT ShadowMapSize = ShadowsExteriors->ShadowMapSize[Index];
-
-	// Depth texture
-	// TODO: Why do we have a separate texture for depth instead of like using the depth buffer?
-	Device->CreateTexture(ShadowMapSize, ShadowMapSize, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R32F, D3DPOOL_DEFAULT, &ShadowMapTexture[Index], NULL);
-	ShadowMapTexture[Index]->GetSurfaceLevel(0, &ShadowMapSurface[Index]);
-
-	if(ShadowsExteriors->EnableReflectanceShadowMapping)
-	{
-		// Shadow gbuffer color/specular texture
-		Device->CreateTexture(
-			ShadowMapSize, ShadowMapSize, 
-			1,
-			D3DUSAGE_RENDERTARGET,
-			D3DFMT_A8R8G8B8,
-			D3DPOOL_DEFAULT,
-			&ShadowGbufferColorSpecular[Index], 
-			nullptr);
-		ShadowGbufferColorSpecular[Index]->GetSurfaceLevel(0, &ShadowGbufferColorSpecularSurface[Index]);
-
-		// Shadow gbuffer normals/glossiness texture
-		Device->CreateTexture(
-			ShadowMapSize,
-			ShadowMapSize,
-			1,
-			D3DUSAGE_RENDERTARGET,
-			D3DFMT_A8R8G8B8,
-			D3DPOOL_DEFAULT,
-			&ShadowGbufferNormalGlossiness[Index],
-			nullptr);
-		ShadowGbufferNormalGlossiness[Index]->GetSurfaceLevel(0, &ShadowGbufferNormalGlossinessSurface[Index]);
-	}
-
-	// Depth buffer
-	Device->CreateDepthStencilSurface(ShadowMapSize, ShadowMapSize, D3DFMT_D24S8, D3DMULTISAMPLE_NONE, 0, true, &ShadowMapDepthSurface[Index], NULL);
-	ShadowMapViewPort[Index] = { 0, 0, ShadowMapSize, ShadowMapSize, 0.0f, 1.0f };
 }
 
 static __declspec(naked) void RenderShadowMapHook() {
@@ -737,7 +680,7 @@ static __declspec(naked) void RenderShadowMapHook() {
 }
 
 void AddCastShadowFlag(TESObjectREFR* Ref, TESObjectLIGH* Light, NiPointLight* LightPoint) {
-	
+
 	SettingsShadowStruct::InteriorsStruct* ShadowsInteriors = &TheSettingManager->SettingsShadows.Interiors;
 
 	if (Light->lightFlags & TESObjectLIGH::LightFlags::kLightFlags_CanCarry) {
@@ -752,7 +695,7 @@ void AddCastShadowFlag(TESObjectREFR* Ref, TESObjectLIGH* Light, NiPointLight* L
 			}
 			LightPoint->CanCarry = 2;
 		}
-	}		
+	}
 	else {
 		LightPoint->CastShadows = !(Light->flags & TESForm::FormFlags::kFormFlags_NotCastShadows);
 		LightPoint->CanCarry = 0;
@@ -803,7 +746,7 @@ static __declspec(naked) void AddCastShadowFlagHook() {
 
 #if defined(NEWVEGAS)
 void LeavesNodeName(BSTreeNode* TreeNode) {
-	
+
 	TreeNode->m_children.data[1]->SetName("Leaves");
 
 }
@@ -813,7 +756,7 @@ static __declspec(naked) void LeavesNodeNameHook() {
 	__asm
 	{
 		pushad
-		push	eax 
+		push	eax
 		call	LeavesNodeName
 		pop		eax
 		popad
@@ -824,9 +767,9 @@ static __declspec(naked) void LeavesNodeNameHook() {
 #endif
 
 void CreateShadowsHook() {
-	
-	WriteRelJump(kRenderShadowMapHook,		(UInt32)RenderShadowMapHook);
-	WriteRelJump(kAddCastShadowFlagHook,	(UInt32)AddCastShadowFlagHook);
+
+	WriteRelJump(kRenderShadowMapHook, (UInt32)RenderShadowMapHook);
+	WriteRelJump(kAddCastShadowFlagHook, (UInt32)AddCastShadowFlagHook);
 
 #if defined(NEWVEGAS)
 	WriteRelJump(kLeavesNodeName, (UInt32)LeavesNodeNameHook);
@@ -842,7 +785,7 @@ void CreateShadowsHook() {
 }
 
 void EditorCastShadowFlag(HWND Window, TESForm* Form) {
-	
+
 	if (Window && Form) {
 		SetDlgItemTextA(Window, 0x697, "Does Not Cast Shadows");
 		SetWindowPos(GetDlgItem(Window, 0x697), HWND_BOTTOM, 0, 0, 140, 15, SWP_NOMOVE | SWP_NOZORDER);
