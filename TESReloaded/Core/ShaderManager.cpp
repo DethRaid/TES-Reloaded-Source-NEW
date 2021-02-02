@@ -299,6 +299,7 @@ bool ShaderRecord::LoadShader(const char* Name) {
 		else if (strstr(Name, ".pso"))
 			Type = ShaderType_Pixel;
 		if (TheSettingManager->SettingsMain.Develop.CompileShaders) {
+			Logger::Log("Compiling shader %s...", FileName);
 			D3DXCompileShaderFromFileA(FileName, NULL, NULL, "main", (Type == ShaderType_Vertex ? "vs_3_0" : "ps_3_0"), NULL, &Shader, &Errors, &Table);
 			if (Errors) Logger::Log((char*)Errors->GetBufferPointer());
 			if (Shader) {
