@@ -296,16 +296,17 @@ bool ShaderRecord::LoadShader(const char* Name) {
 	else if (strstr(Name, ".pso")) {
 		Type = ShaderType_Pixel;
 	}
+
+	const std::ifstream HlslFile{ FileName };
+	if (!HlslFile.is_open()) {
+		return false;
+	}
+	
 	if (TheSettingManager->SettingsMain.Develop.CompileShaders) {
 		ZoneScopedN("D3DXCompileShaderFromFileA");
 
 		// TODO: Check if the file (or any of the files it includes, or any of the files the included files include...) have
 		// changed since the shader was last compiled, and only recompile if necessary
-
-		const std::ifstream HlslFile{ FileName };
-		if(!HlslFile.is_open()) {
-			return false;
-		}
 		
 		const HRESULT Result = D3DXCompileShaderFromFileA(FileName, nullptr, nullptr, "main", (Type == ShaderType_Vertex ? "vs_3_0" : "ps_3_0"), NULL, &Shader, &Errors, &Table);
 		if(FAILED(Result)) {
