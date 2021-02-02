@@ -47,9 +47,9 @@
 
 ShaderProgram::ShaderProgram() {
 
-	FloatShaderValues = NULL;
-	TextureShaderValues = NULL;
-	FloatShaderValuesCount = 0;
+	FloatShaderValues        = nullptr;
+	TextureShaderValues      = nullptr;
+	FloatShaderValuesCount   = 0;
 	TextureShaderValuesCount = 0;
 
 }
@@ -221,15 +221,15 @@ void ShaderProgram::SetConstantTableValue(LPCSTR Name, UInt32 Index) {
 
 ShaderRecord::ShaderRecord() {
 	
-	Enabled		= false;
-	HasCT		= false;
-	HasRB		= false;
-	HasDB		= false;
-	Function	= NULL;
-	Source		= NULL;
-	Shader		= NULL;
-	Table		= NULL;
-	Errors		= NULL;
+	Enabled  = false;
+	HasCT    = false;
+	HasRB    = false;
+	HasDB    = false;
+	Function = nullptr;
+	Source   = nullptr;
+	Shader   = nullptr;
+	Table    = nullptr;
+	Errors   = nullptr;
 
 }
 
@@ -290,63 +290,59 @@ bool ShaderRecord::LoadShader(const char* Name) {
 	strcat(FileName, Name);
 	strcpy(FileNameBinary, FileName);
 	strcat(FileName, ".hlsl");
-	std::ifstream FileSource(FileName, std::ios::in | std::ios::binary | std::ios::ate);
-	if (FileSource.is_open()) {
-		if (strstr(Name, ".vso")) {
-			Type = ShaderType_Vertex;
+	if (strstr(Name, ".vso")) {
+		Type = ShaderType_Vertex;
+	}
+	else if (strstr(Name, ".pso")) {
+		Type = ShaderType_Pixel;
+	}
+	if (TheSettingManager->SettingsMain.Develop.CompileShaders) {
+		ZoneScopedN("D3DXCompileShaderFromFileA");
+		const HRESULT Result = D3DXCompileShaderFromFileA(FileName, nullptr, nullptr, "main", (Type == ShaderType_Vertex ? "vs_3_0" : "ps_3_0"), NULL, &Shader, &Errors, &Table);
+		if(FAILED(Result)) {
+			Logger::Log("Could not compile shader %s: Error code %#010x", FileName, Result);
 		}
-		else if (strstr(Name, ".pso")) {
-			Type = ShaderType_Pixel;
-		}
-		if (TheSettingManager->SettingsMain.Develop.CompileShaders) {
-			ZoneScopedN("D3DXCompileShaderFromFileA");
-			HRESULT result = D3DXCompileShaderFromFileA(FileName, NULL, NULL, "main", (Type == ShaderType_Vertex ? "vs_3_0" : "ps_3_0"), NULL, &Shader, &Errors, &Table);
-			if(FAILED(result)) {
-				Logger::Log("Could not compile shader %s: Error code %#0x", FileName, result);
-			}
-			if (Errors) {
-				Logger::Log((char*)Errors->GetBufferPointer());
-			}
-			if (Shader) {
-				ZoneScopedN("Save compiled shader");
-				std::ofstream FileBinary(FileNameBinary, std::ios::out|std::ios::binary);
-				FileBinary.write((char*)Shader->GetBufferPointer(), Shader->GetBufferSize());
-				FileBinary.flush();
-				FileBinary.close();
-				Logger::Log("Shader compiled: %s", FileName);
-			}
-		}
-		else {
-			std::ifstream FileBinary(FileNameBinary, std::ios::in | std::ios::binary | std::ios::ate);
-			if (FileBinary.is_open()) {
-
-				std::streampos size = FileBinary.tellg();
-				D3DXCreateBuffer(size, &Shader);
-				FileBinary.seekg(0, std::ios::beg);
-				void* pShaderBuffer = Shader->GetBufferPointer();
-				FileBinary.read((char*)pShaderBuffer, size);
-				FileBinary.close();
-				D3DXGetShaderConstantTable((const DWORD*)pShaderBuffer, &Table);
-			}
-			else {
-				Logger::Log("ERROR: Shader %s not found. Try to enable the CompileShader option to recompile the shaders.", FileNameBinary);
-			}
+		if (Errors) {
+			Logger::Log((char*)Errors->GetBufferPointer());
 		}
 		if (Shader) {
-			Function = Shader->GetBufferPointer();
-			CreateCT();
-			Logger::Log("Shader loaded: %s", FileNameBinary);
-			return true;
+			ZoneScopedN("Save compiled shader");
+			std::ofstream FileBinary(FileNameBinary, std::ios::out|std::ios::binary);
+			FileBinary.write((char*)Shader->GetBufferPointer(), Shader->GetBufferSize());
+			FileBinary.flush();
+			FileBinary.close();
+			Logger::Log("Shader compiled: %s", FileName);
 		}
 	}
 	else {
-		Logger::Log("Unable to read shader file %s", FileName);
+		std::ifstream FileBinary(FileNameBinary, std::ios::in | std::ios::binary | std::ios::ate);
+		if (FileBinary.is_open()) {
+			const std::streampos size = FileBinary.tellg();
+			D3DXCreateBuffer(size, &Shader);
+			FileBinary.seekg(0, std::ios::beg);
+			void* pShaderBuffer = Shader->GetBufferPointer();
+			FileBinary.read((char*)pShaderBuffer, size);
+			FileBinary.close();
+			D3DXGetShaderConstantTable((const DWORD*)pShaderBuffer, &Table);
+		}
+		else {
+			Logger::Log("ERROR: Shader %s not found. Try to enable the CompileShader option to recompile the shaders.", FileNameBinary);
+		}
 	}
+	if (Shader) {
+		Function = Shader->GetBufferPointer();
+		CreateCT();
+		Logger::Log("Shader loaded: %s", FileNameBinary);
+		return true;
+	}
+	
 	return false;
 }
 
 void ShaderRecord::CreateCT() {
 
+	ZoneScoped;
+	
 	D3DXCONSTANTTABLE_DESC ConstantTableDesc;
 	D3DXCONSTANT_DESC ConstantDesc;
 	D3DXHANDLE Handle;
@@ -356,7 +352,7 @@ void ShaderRecord::CreateCT() {
 	
 	Table->GetDesc(&ConstantTableDesc);
     for (UINT c = 0; c < ConstantTableDesc.Constants; c++) {
-		Handle = Table->GetConstant(NULL, c);
+		Handle = Table->GetConstant(nullptr, c);
 		Table->GetConstantDesc(Handle, &ConstantDesc, &ConstantCount);
 		if (ConstantDesc.RegisterSet == D3DXRS_FLOAT4 && !memcmp(ConstantDesc.Name, "TESR_", 5)) FloatShaderValuesCount += 1;
 		if (ConstantDesc.RegisterSet == D3DXRS_SAMPLER && !memcmp(ConstantDesc.Name, "TESR_", 5)) TextureShaderValuesCount += 1;
@@ -366,7 +362,7 @@ void ShaderRecord::CreateCT() {
 		FloatShaderValues = (ShaderValue*)malloc(FloatShaderValuesCount * sizeof(ShaderValue));
 		TextureShaderValues = (ShaderValue*)malloc(TextureShaderValuesCount * sizeof(ShaderValue));
 		for (UINT c = 0; c < ConstantTableDesc.Constants; c++) {
-			Handle = Table->GetConstant(NULL, c);
+			Handle = Table->GetConstant(nullptr, c);
 			Table->GetConstantDesc(Handle, &ConstantDesc, &ConstantCount);
 			if (!memcmp(ConstantDesc.Name, "TESR_", 5)) {
 				switch (ConstantDesc.RegisterSet) {
@@ -392,12 +388,14 @@ void ShaderRecord::CreateCT() {
 }
 
 void ShaderRecord::SetCT() {
+
+	ZoneScoped;
 	
 	ShaderValue* Value;
 
 	if (HasCT) {
 		if (HasRB && !TheShaderManager->RenderedBufferFilled) {
-			TheRenderManager->device->StretchRect(TheRenderManager->currentRTGroup->RenderTargets[0]->data->Surface, NULL, TheShaderManager->RenderedSurface, NULL, D3DTEXF_NONE);
+			TheRenderManager->device->StretchRect(TheRenderManager->currentRTGroup->RenderTargets[0]->data->Surface, nullptr, TheShaderManager->RenderedSurface, nullptr, D3DTEXF_NONE);
 			TheShaderManager->RenderedBufferFilled = true;
 		}
 		if (HasDB && !TheShaderManager->DepthBufferFilled) {
@@ -427,9 +425,9 @@ void ShaderRecord::SetCT() {
 EffectRecord::EffectRecord() {
 
 	Enabled = false;
-	Source = NULL;
-	Effect = NULL;
-	Errors = NULL;
+	Source  = nullptr;
+	Effect  = nullptr;
+	Errors  = nullptr;
 
 }
 
@@ -442,6 +440,8 @@ EffectRecord::~EffectRecord() {
 }
 
 bool EffectRecord::LoadEffect(const char* Name) {
+
+	ZoneScoped;
 
 	char FileName[MAX_PATH];
 	bool Compiled = true;
@@ -456,10 +456,10 @@ bool EffectRecord::LoadEffect(const char* Name) {
 		FileSource.read(Source, size);
 		FileSource.close();
 		if (TheSettingManager->SettingsMain.Develop.CompileEffects) {
-			Compiled = false;
-			ID3DXEffectCompiler* Compiler = NULL;
-			ID3DXBuffer* EffectBuffer = NULL;
-			const auto result = D3DXCreateEffectCompilerFromFileA(FileName, NULL, NULL, NULL, &Compiler, &Errors);
+			Compiled                      = false;
+			ID3DXEffectCompiler* Compiler = nullptr;
+			ID3DXBuffer* EffectBuffer     = nullptr;
+			const auto result             = D3DXCreateEffectCompilerFromFileA(FileName, nullptr, nullptr, NULL, &Compiler, &Errors);
 			if(FAILED(result)) {
 				Logger::Log("Could not create effect compiler from file %s", FileName);
 			}
@@ -489,7 +489,7 @@ bool EffectRecord::LoadEffect(const char* Name) {
 			}
 		}
 		if (Compiled) {
-			D3DXCreateEffectFromFileA(TheRenderManager->device, Name, NULL, NULL, NULL, NULL, &Effect, &Errors);
+			D3DXCreateEffectFromFileA(TheRenderManager->device, Name, nullptr, nullptr, NULL, nullptr, &Effect, &Errors);
 			if (Errors) Logger::Log((char*)Errors->GetBufferPointer());
 			if (Effect) {
 				CreateCT();
@@ -504,6 +504,8 @@ bool EffectRecord::LoadEffect(const char* Name) {
 
 void EffectRecord::CreateCT() {
 
+	ZoneScoped;
+
 	D3DXEFFECT_DESC ConstantTableDesc;
 	D3DXPARAMETER_DESC ConstantDesc;
 	D3DXHANDLE Handle;
@@ -513,7 +515,7 @@ void EffectRecord::CreateCT() {
 
 	Effect->GetDesc(&ConstantTableDesc);
 	for (UINT c = 0; c < ConstantTableDesc.Parameters; c++) {
-		Handle = Effect->GetParameter(NULL, c);
+		Handle = Effect->GetParameter(nullptr, c);
 		Effect->GetParameterDesc(Handle, &ConstantDesc);
 		if ((ConstantDesc.Class == D3DXPC_VECTOR || ConstantDesc.Class == D3DXPC_MATRIX_ROWS) && !memcmp(ConstantDesc.Name, "TESR_", 5)) FloatShaderValuesCount += 1;
 		if (ConstantDesc.Class == D3DXPC_OBJECT && ConstantDesc.Type >= D3DXPT_SAMPLER && ConstantDesc.Type <= D3DXPT_SAMPLERCUBE && !memcmp(ConstantDesc.Name, "TESR_", 5)) TextureShaderValuesCount += 1;
@@ -521,7 +523,7 @@ void EffectRecord::CreateCT() {
 	FloatShaderValues = (ShaderValue*)malloc(FloatShaderValuesCount * sizeof(ShaderValue));
 	TextureShaderValues = (ShaderValue*)malloc(TextureShaderValuesCount * sizeof(ShaderValue));
 	for (UINT c = 0; c < ConstantTableDesc.Parameters; c++) {
-		Handle = Effect->GetParameter(NULL, c);
+		Handle = Effect->GetParameter(nullptr, c);
 		Effect->GetParameterDesc(Handle, &ConstantDesc);
 		if (!memcmp(ConstantDesc.Name, "TESR_", 5)) {
 			switch (ConstantDesc.Class) {
@@ -548,6 +550,8 @@ void EffectRecord::CreateCT() {
 
 void EffectRecord::SetCT() {
 
+	ZoneScoped;
+
 	ShaderValue* Value;
 
 	for (UInt32 c = 0; c < TextureShaderValuesCount; c++) {
@@ -566,21 +570,25 @@ void EffectRecord::SetCT() {
 
 void EffectRecord::Render(IDirect3DDevice9* Device, IDirect3DSurface9* RenderTarget, IDirect3DSurface9* RenderedSurface, bool ClearRenderTarget) {
 
+	ZoneScoped;
+
 	UINT Passes;
 
 	Effect->Begin(&Passes, NULL);
 	for (UINT p = 0; p < Passes; p++) {
-		if (ClearRenderTarget) Device->Clear(0L, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0L);
+		if (ClearRenderTarget) Device->Clear(0L, nullptr, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0L);
 		Effect->BeginPass(p);
 		Device->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
 		Effect->EndPass();
-		Device->StretchRect(RenderTarget, NULL, RenderedSurface, NULL, D3DTEXF_NONE);
+		Device->StretchRect(RenderTarget, nullptr, RenderedSurface, nullptr, D3DTEXF_NONE);
 	}
 	Effect->End();
 
 }
 
 ShaderManager::ShaderManager() {
+
+	ZoneScoped;
 
 	Logger::Log("Starting the shaders manager...");
 	TheShaderManager = this;
@@ -589,37 +597,37 @@ ShaderManager::ShaderManager() {
 	float UAdj, VAdj;
 	void* VertexPointer;
 
-	SourceTexture = NULL;
-	SourceSurface = NULL;
-	RenderedTexture = NULL;
-	RenderedSurface = NULL;
-	RenderTextureSMAA = NULL;
-	RenderSurfaceSMAA = NULL;
-	RenderedBufferFilled = false;
-	DepthBufferFilled = false;
-	EffectVertex = NULL;
-	UnderwaterEffect = NULL;
-	WaterLensEffect = NULL;
-	GodRaysEffect = NULL;
-	DepthOfFieldEffect = NULL;
-	AmbientOcclusionEffect = NULL;
-	ColoringEffect = NULL;
-	CinemaEffect = NULL;
-	BloomEffect = NULL;
-	SnowAccumulationEffect = NULL;
-	BloodLensEffect = NULL;
-	SMAAEffect = NULL;
-	MotionBlurEffect = NULL;
-	LowHFEffect = NULL;
-	WetWorldEffect = NULL;
-	SharpeningEffect = NULL;
-	VolumetricFogEffect = NULL;
-	RainEffect = NULL;
-	SnowEffect = NULL;
-	ShadowsExteriorsEffect = NULL;
-	ShadowsInteriorsEffect = NULL;
-	WaterHeightMapVertexShader = NULL;
-	WaterHeightMapPixelShader = NULL;
+	SourceTexture              = nullptr;
+	SourceSurface              = nullptr;
+	RenderedTexture            = nullptr;
+	RenderedSurface            = nullptr;
+	RenderTextureSMAA          = nullptr;
+	RenderSurfaceSMAA          = nullptr;
+	RenderedBufferFilled       = false;
+	DepthBufferFilled          = false;
+	EffectVertex               = nullptr;
+	UnderwaterEffect           = nullptr;
+	WaterLensEffect            = nullptr;
+	GodRaysEffect              = nullptr;
+	DepthOfFieldEffect         = nullptr;
+	AmbientOcclusionEffect     = nullptr;
+	ColoringEffect             = nullptr;
+	CinemaEffect               = nullptr;
+	BloomEffect                = nullptr;
+	SnowAccumulationEffect     = nullptr;
+	BloodLensEffect            = nullptr;
+	SMAAEffect                 = nullptr;
+	MotionBlurEffect           = nullptr;
+	LowHFEffect                = nullptr;
+	WetWorldEffect             = nullptr;
+	SharpeningEffect           = nullptr;
+	VolumetricFogEffect        = nullptr;
+	RainEffect                 = nullptr;
+	SnowEffect                 = nullptr;
+	ShadowsExteriorsEffect     = nullptr;
+	ShadowsInteriorsEffect     = nullptr;
+	WaterHeightMapVertexShader = nullptr;
+	WaterHeightMapPixelShader  = nullptr;
 	memset(WaterVertexShaders, NULL, sizeof(WaterVertexShaders));
 	memset(WaterPixelShaders, NULL, sizeof(WaterPixelShaders));
 	InitializeConstants();
@@ -641,13 +649,13 @@ ShaderManager::ShaderManager() {
 		{  1.0f,  1.0f, 1.0f, 1.0f + UAdj, 0.0f + VAdj },
 		{  1.0f, -1.0f, 1.0f, 1.0f + UAdj, 1.0f + VAdj }
 	};
-	TheRenderManager->device->CreateVertexBuffer(4 * sizeof(EffectQuad), D3DUSAGE_WRITEONLY, EFFECTQUADFORMAT, D3DPOOL_DEFAULT, &EffectVertex, 0);
+	TheRenderManager->device->CreateVertexBuffer(4 * sizeof(EffectQuad), D3DUSAGE_WRITEONLY, EFFECTQUADFORMAT, D3DPOOL_DEFAULT, &EffectVertex, nullptr);
 	EffectVertex->Lock(0, 0, &VertexPointer, 0);
 	CopyMemory(VertexPointer, ShaderVertices, sizeof(ShaderVertices));
 	EffectVertex->Unlock();
-	TheRenderManager->device->CreateTexture(TheRenderManager->width, TheRenderManager->height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &SourceTexture, NULL);
-	TheRenderManager->device->CreateTexture(TheRenderManager->width, TheRenderManager->height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &RenderedTexture, NULL);
-	TheRenderManager->device->CreateTexture(TheRenderManager->width, TheRenderManager->height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &RenderTextureSMAA, NULL);
+	TheRenderManager->device->CreateTexture(TheRenderManager->width, TheRenderManager->height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &SourceTexture, nullptr);
+	TheRenderManager->device->CreateTexture(TheRenderManager->width, TheRenderManager->height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &RenderedTexture, nullptr);
+	TheRenderManager->device->CreateTexture(TheRenderManager->width, TheRenderManager->height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &RenderTextureSMAA, nullptr);
 	SourceTexture->GetSurfaceLevel(0, &SourceSurface);
 	RenderedTexture->GetSurfaceLevel(0, &RenderedSurface);
 	RenderTextureSMAA->GetSurfaceLevel(0, &RenderSurfaceSMAA);
@@ -655,7 +663,9 @@ ShaderManager::ShaderManager() {
 }
 
 void ShaderManager::CreateEffects() {
-	
+
+	ZoneScoped;
+
 	SettingsMainStruct::EffectsStruct* Effects = &TheSettingManager->SettingsMain.Effects;
 
 	if (Effects->AmbientOcclusion) CreateEffect(EffectRecordType_AmbientOcclusion);
@@ -683,14 +693,16 @@ void ShaderManager::CreateEffects() {
 
 void ShaderManager::InitializeConstants() {
 
-	ShaderConst.pWeather = NULL;
-	ShaderConst.WaterLens.Percent = 0.0f;
-	ShaderConst.BloodLens.Percent = 0.0f;
+	ShaderConst.pWeather                  = nullptr;
+	ShaderConst.WaterLens.Percent         = 0.0f;
+	ShaderConst.BloodLens.Percent         = 0.0f;
 	ShaderConst.SnowAccumulation.Params.w = 0.0f;
-	ShaderConst.WetWorld.Data.x = 0.0f;
+	ShaderConst.WetWorld.Data.x           = 0.0f;
 }
 
 void ShaderManager::UpdateConstants() {
+
+	ZoneScoped;
 
 	LARGE_INTEGER PerformanceCount;
 	double Tick;
@@ -783,7 +795,7 @@ void ShaderManager::UpdateConstants() {
 					}
 				}
 
-				if (ShaderConst.pWeather == NULL) ShaderConst.pWeather = currentWeather;
+				if (ShaderConst.pWeather == nullptr) ShaderConst.pWeather = currentWeather;
 
 				for (int t = TESWeather::eTime_Sunrise; t <= TESWeather::eTime_Night ; t++) {
 					RGBA color = currentWeather->colors[TESWeather::eColor_Fog].colors[t];
@@ -950,7 +962,7 @@ void ShaderManager::UpdateConstants() {
 		}
 
 		if (TheSettingManager->SettingsMain.Shaders.Water || TheSettingManager->SettingsMain.Effects.Underwater) {
-			SettingsWaterStruct* sws = NULL;
+			SettingsWaterStruct* sws   = nullptr;
 			TESWaterForm* currentWater = currentCell->GetWaterForm();
 			
 			if (CurrentBlend == 0.25f)
@@ -1200,7 +1212,7 @@ void ShaderManager::UpdateConstants() {
 		}
 
 		if (TheSettingManager->SettingsMain.Effects.AmbientOcclusion) {
-			SettingsAmbientOcclusionStruct* sas = NULL;
+			SettingsAmbientOcclusionStruct* sas = nullptr;
 
 			if (currentWorldSpace)
 				sas = TheSettingManager->GetSettingsAmbientOcclusion("Exterior");
@@ -1221,7 +1233,7 @@ void ShaderManager::UpdateConstants() {
 		}
 
 		if (TheSettingManager->SettingsMain.Effects.Bloom) {
-			SettingsBloomStruct* sbs = NULL;
+			SettingsBloomStruct* sbs = nullptr;
 			if (!(sbs = TheSettingManager->GetSettingsBloom(currentCell->GetEditorName())))
 				if (currentWorldSpace)
 					sbs = TheSettingManager->GetSettingsBloom(currentWorldSpace->GetEditorName());
@@ -1238,7 +1250,7 @@ void ShaderManager::UpdateConstants() {
 		}
 
 		if (TheSettingManager->SettingsMain.Effects.Coloring) {
-			SettingsColoringStruct* scs = NULL;
+			SettingsColoringStruct* scs = nullptr;
 			if (!(scs = TheSettingManager->GetSettingsColoring(currentCell->GetEditorName())))
 				if (currentWorldSpace)
 					scs = TheSettingManager->GetSettingsColoring(currentWorldSpace->GetEditorName());
@@ -1268,7 +1280,7 @@ void ShaderManager::UpdateConstants() {
 				ShaderConst.BloodLens.Time.z = TheSettingManager->SettingsBlood.LensTime;
 				if (ShaderConst.BloodLens.Percent == 1.0f) {
 					ShaderConst.BloodLens.Time.w = 0.0f;
-					srand(time(NULL));
+					srand(time(nullptr));
 					ShaderConst.BloodLens.Params.x = (double)rand() / (RAND_MAX + 1) * (0.75f - 0.25f) + 0.25f; //from 0.25 to 0.75
 					ShaderConst.BloodLens.Params.y = (double)rand() / (RAND_MAX + 1) * (0.5f + 0.1f) - 0.1f; //from -0.1 to 0.5
 					ShaderConst.BloodLens.Params.z = (double)rand() / (RAND_MAX + 1) * (2.0f + 2.0f) - 2.0f; //from -2 to 2
@@ -1307,7 +1319,7 @@ void ShaderManager::UpdateConstants() {
 		}
 
 		if (TheSettingManager->SettingsMain.Effects.DepthOfField) {
-			SettingsDepthOfFieldStruct* sds = NULL;
+			SettingsDepthOfFieldStruct* sds = nullptr;
 
 			if (Player->IsVanityView())
 				sds = TheSettingManager->GetSettingsDepthOfField("VanityView");
@@ -1365,7 +1377,7 @@ void ShaderManager::UpdateConstants() {
 		}
 
 		if (TheSettingManager->SettingsMain.Effects.MotionBlur) {
-			SettingsMotionBlurStruct* sms = NULL;
+			SettingsMotionBlurStruct* sms = nullptr;
 
 			if (IsThirdPersonView)
 				sms = TheSettingManager->GetSettingsMotionBlur("ThirdPersonView");
@@ -1434,6 +1446,8 @@ void ShaderManager::BeginScene() {
 }
 
 void ShaderManager::CreateShader(const char* Name) {
+
+	ZoneScoped;
 
 #if defined(NEWVEGAS)
 	BSShader* (__cdecl * GetShaderDefinition)(UInt32) = (BSShader* (__cdecl *)(UInt32))0x00B55560;
@@ -1510,7 +1524,9 @@ void ShaderManager::CreateShader(const char* Name) {
 }
 
 void ShaderManager::LoadShader(NiD3DVertexShader* Shader) {
-	
+
+	ZoneScoped;
+
 	ShaderRecord* ShaderProg = new ShaderRecord();
 	NiD3DVertexShaderEx* VertexShader = (NiD3DVertexShaderEx*)Shader;
 
@@ -1526,6 +1542,8 @@ void ShaderManager::LoadShader(NiD3DVertexShader* Shader) {
 }
 
 void ShaderManager::LoadShader(NiD3DPixelShader* Shader) {
+
+	ZoneScoped;
 
 	ShaderRecord* ShaderProg = new ShaderRecord();
 	NiD3DPixelShaderEx* PixelShader = (NiD3DPixelShaderEx*)Shader;
@@ -1543,6 +1561,8 @@ void ShaderManager::LoadShader(NiD3DPixelShader* Shader) {
 
 void ShaderManager::DisposeShader(const char* Name) {
 
+	ZoneScoped;
+
 #if defined(NEWVEGAS)
 	BSShader* (__cdecl * GetShader)(UInt32) = (BSShader* (__cdecl *)(UInt32))0x00B55560;
 	if (!strcmp(Name, "Water")) {
@@ -1550,24 +1570,24 @@ void ShaderManager::DisposeShader(const char* Name) {
 		for each (NiD3DVertexShaderEx* VS in WS->Vertex) {
 			if (VS->ShaderProg) {
 				VS->ShaderHandle = VS->ShaderHandleBackup;
-				delete VS->ShaderProg; VS->ShaderProg = NULL;
+				delete VS->ShaderProg; VS->ShaderProg = nullptr;
 			}
 		}
 		for each (NiD3DPixelShaderEx* PS in WS->Pixel) {
 			if (PS->ShaderProg) {
 				PS->ShaderHandle = PS->ShaderHandleBackup;
-				delete PS->ShaderProg; PS->ShaderProg = NULL;
+				delete PS->ShaderProg; PS->ShaderProg = nullptr;
 			}
 		}
 		NiD3DVertexShaderEx* VS = (NiD3DVertexShaderEx*)WaterHeightMapVertexShader;
 		if (VS->ShaderProg) {
 			VS->ShaderHandle = VS->ShaderHandleBackup;
-			delete VS->ShaderProg; VS->ShaderProg = NULL;
+			delete VS->ShaderProg; VS->ShaderProg = nullptr;
 		}
 		NiD3DPixelShaderEx* PS = (NiD3DPixelShaderEx*)WaterHeightMapPixelShader;
 		if (PS->ShaderProg) {
 			PS->ShaderHandle = PS->ShaderHandleBackup;
-			delete PS->ShaderProg; PS->ShaderProg = NULL;
+			delete PS->ShaderProg; PS->ShaderProg = nullptr;
 		}
 	}
 #elif defined(OBLIVION)
@@ -1727,6 +1747,8 @@ void ShaderManager::DisposeShader(const char* Name) {
 
 void ShaderManager::CreateEffect(EffectRecordType EffectType) {
 
+	ZoneScoped;
+
 	char Filename[MAX_PATH];
 
 	strcpy(Filename, EffectsPath);
@@ -1734,109 +1756,109 @@ void ShaderManager::CreateEffect(EffectRecordType EffectType) {
 		case EffectRecordType_Underwater:
 			strcat(Filename, "Water\\Underwater.fx");
 			UnderwaterEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.Underwater = LoadEffect(UnderwaterEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.Underwater = LoadEffect(UnderwaterEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_WaterLens:
 			strcat(Filename, "Water\\WaterLens.fx");
 			WaterLensEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.WaterLens = LoadEffect(WaterLensEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.WaterLens = LoadEffect(WaterLensEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_GodRays:
 			strcat(Filename, "GodRays\\GodRays.fx");
 			GodRaysEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.GodRays = LoadEffect(GodRaysEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.GodRays = LoadEffect(GodRaysEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_DepthOfField:
 			strcat(Filename, "DepthOfField\\DepthOfField.fx");
 			DepthOfFieldEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.DepthOfField = LoadEffect(DepthOfFieldEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.DepthOfField = LoadEffect(DepthOfFieldEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_AmbientOcclusion:
 			strcat(Filename, "AmbientOcclusion\\AmbientOcclusion.fx");
 			AmbientOcclusionEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.AmbientOcclusion = LoadEffect(AmbientOcclusionEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.AmbientOcclusion = LoadEffect(AmbientOcclusionEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_Coloring:
 			strcat(Filename, "Coloring\\Coloring.fx");
 			ColoringEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.Coloring = LoadEffect(ColoringEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.Coloring = LoadEffect(ColoringEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_Cinema:
 			strcat(Filename, "Cinema\\Cinema.fx");
 			CinemaEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.Cinema = LoadEffect(CinemaEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.Cinema = LoadEffect(CinemaEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_Bloom:
 			strcat(Filename, "Bloom\\Bloom.fx");
 			BloomEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.Bloom = LoadEffect(BloomEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.Bloom = LoadEffect(BloomEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_SnowAccumulation:
 			strcat(Filename, "Precipitations\\SnowAccumulation.fx");
 			SnowAccumulationEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.SnowAccumulation = LoadEffect(SnowAccumulationEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.SnowAccumulation = LoadEffect(SnowAccumulationEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_BloodLens:
 			strcat(Filename, "Blood\\BloodLens.fx");
 			BloodLensEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.BloodLens = LoadEffect(BloodLensEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.BloodLens = LoadEffect(BloodLensEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_SMAA:
 			strcat(Filename, "SMAA\\SMAA.fx");
 			SMAAEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.SMAA = LoadEffect(SMAAEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.SMAA = LoadEffect(SMAAEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_MotionBlur:
 			strcat(Filename, "MotionBlur\\MotionBlur.fx");
 			MotionBlurEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.MotionBlur = LoadEffect(MotionBlurEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.MotionBlur = LoadEffect(MotionBlurEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_LowHF:
 			strcat(Filename, "LowHF\\LowHF.fx");
 			LowHFEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.LowHF = LoadEffect(LowHFEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.LowHF = LoadEffect(LowHFEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_WetWorld:
 			strcat(Filename, "Precipitations\\WetWorld.fx");
 			WetWorldEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.WetWorld = LoadEffect(WetWorldEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.WetWorld = LoadEffect(WetWorldEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_Sharpening:
 			strcat(Filename, "Sharpening\\Sharpening.fx");
 			SharpeningEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.Sharpening = LoadEffect(SharpeningEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.Sharpening = LoadEffect(SharpeningEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_VolumetricFog:
 			strcat(Filename, "Fog\\VolumetricFog.fx");
 			VolumetricFogEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.VolumetricFog = LoadEffect(VolumetricFogEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.VolumetricFog = LoadEffect(VolumetricFogEffect, Filename, nullptr);
 			break;
 		case EffectRecordType_Precipitations:
 			strcat(Filename, "Precipitations\\Rain.fx");
 			RainEffect = new EffectRecord();
-			TheSettingManager->SettingsMain.Effects.Precipitations = LoadEffect(RainEffect, Filename, NULL);
+			TheSettingManager->SettingsMain.Effects.Precipitations = LoadEffect(RainEffect, Filename, nullptr);
 			if (TheSettingManager->SettingsMain.Effects.Precipitations) {
 				strcpy(Filename, EffectsPath);
 				strcat(Filename, "Precipitations\\Snow.fx");
 				SnowEffect = new EffectRecord();
-				TheSettingManager->SettingsMain.Effects.Precipitations = LoadEffect(SnowEffect, Filename, NULL);
+				TheSettingManager->SettingsMain.Effects.Precipitations = LoadEffect(SnowEffect, Filename, nullptr);
 			}
 			break;
 		case EffectRecordType_ShadowsExteriors:
 			strcat(Filename, "Shadows\\ShadowsExteriors.fx");
 			ShadowsExteriorsEffect = new EffectRecord();
-			TheSettingManager->SettingsShadows.Exteriors.Quality = ((int)LoadEffect(ShadowsExteriorsEffect, Filename, NULL)) * -1;
+			TheSettingManager->SettingsShadows.Exteriors.Quality = ((int)LoadEffect(ShadowsExteriorsEffect, Filename, nullptr)) * -1;
 			break;
 		case EffectRecordType_ShadowsInteriors:
 			strcat(Filename, "Shadows\\ShadowsInteriors.fx");
 			ShadowsInteriorsEffect = new EffectRecord();
-			TheSettingManager->SettingsShadows.Interiors.Quality = ((int)LoadEffect(ShadowsInteriorsEffect, Filename, NULL)) * -1;
+			TheSettingManager->SettingsShadows.Interiors.Quality = ((int)LoadEffect(ShadowsInteriorsEffect, Filename, nullptr)) * -1;
 			break;
 		case EffectRecordType_Extra:
 			WIN32_FIND_DATAA File;
 			HANDLE H;
-			char* cFileName = NULL;
-			EffectRecord* ExtraEffect = NULL;
+			char* cFileName           = nullptr;
+			EffectRecord* ExtraEffect = nullptr;
 
 			if (TheSettingManager->SettingsMain.Develop.CompileEffects)
 				strcat(Filename, "ExtraEffects\\*.hlsl");
@@ -1869,6 +1891,8 @@ void ShaderManager::CreateEffect(EffectRecordType EffectType) {
 
 bool ShaderManager::LoadEffect(EffectRecord* TheEffect, char* Filename, char* CustomEffectName) {
 
+	ZoneScoped;
+
 	bool IsLoaded = TheEffect->LoadEffect(Filename);
 
 	if (IsLoaded) {
@@ -1882,33 +1906,37 @@ bool ShaderManager::LoadEffect(EffectRecord* TheEffect, char* Filename, char* Cu
 
 void ShaderManager::DisposeEffect(EffectRecord* TheEffect) {
 
-	if (TheEffect == AmbientOcclusionEffect) AmbientOcclusionEffect = NULL;
-	else if (TheEffect == BloodLensEffect) BloodLensEffect = NULL;
-	else if (TheEffect == BloomEffect) BloomEffect = NULL;
-	else if (TheEffect == CinemaEffect) CinemaEffect = NULL;
-	else if (TheEffect == ColoringEffect) ColoringEffect = NULL;
-	else if (TheEffect == DepthOfFieldEffect) DepthOfFieldEffect = NULL;
-	else if (TheEffect == GodRaysEffect) GodRaysEffect = NULL;
-	else if (TheEffect == LowHFEffect) LowHFEffect = NULL;
-	else if (TheEffect == MotionBlurEffect) MotionBlurEffect = NULL;
-	else if (TheEffect == SMAAEffect) SMAAEffect = NULL;
-	else if (TheEffect == SnowAccumulationEffect) SnowAccumulationEffect = NULL;
-	else if (TheEffect == UnderwaterEffect) UnderwaterEffect = NULL;
-	else if (TheEffect == WaterLensEffect) WaterLensEffect = NULL;
-	else if (TheEffect == WetWorldEffect) WetWorldEffect = NULL;
-	else if (TheEffect == SharpeningEffect) SharpeningEffect = NULL;
-	else if (TheEffect == VolumetricFogEffect) VolumetricFogEffect = NULL;
-	else if (TheEffect == RainEffect) RainEffect = NULL;
-	else if (TheEffect == SnowEffect) SnowEffect = NULL;
-	else if (TheEffect == ShadowsExteriorsEffect) ShadowsExteriorsEffect = NULL;
-	else if (TheEffect == ShadowsInteriorsEffect) ShadowsInteriorsEffect = NULL;
+	ZoneScoped;
+
+	if (TheEffect == AmbientOcclusionEffect) AmbientOcclusionEffect = nullptr;
+	else if (TheEffect == BloodLensEffect) BloodLensEffect = nullptr;
+	else if (TheEffect == BloomEffect) BloomEffect = nullptr;
+	else if (TheEffect == CinemaEffect) CinemaEffect = nullptr;
+	else if (TheEffect == ColoringEffect) ColoringEffect = nullptr;
+	else if (TheEffect == DepthOfFieldEffect) DepthOfFieldEffect = nullptr;
+	else if (TheEffect == GodRaysEffect) GodRaysEffect = nullptr;
+	else if (TheEffect == LowHFEffect) LowHFEffect = nullptr;
+	else if (TheEffect == MotionBlurEffect) MotionBlurEffect = nullptr;
+	else if (TheEffect == SMAAEffect) SMAAEffect = nullptr;
+	else if (TheEffect == SnowAccumulationEffect) SnowAccumulationEffect = nullptr;
+	else if (TheEffect == UnderwaterEffect) UnderwaterEffect = nullptr;
+	else if (TheEffect == WaterLensEffect) WaterLensEffect = nullptr;
+	else if (TheEffect == WetWorldEffect) WetWorldEffect = nullptr;
+	else if (TheEffect == SharpeningEffect) SharpeningEffect = nullptr;
+	else if (TheEffect == VolumetricFogEffect) VolumetricFogEffect = nullptr;
+	else if (TheEffect == RainEffect) RainEffect = nullptr;
+	else if (TheEffect == SnowEffect) SnowEffect = nullptr;
+	else if (TheEffect == ShadowsExteriorsEffect) ShadowsExteriorsEffect = nullptr;
+	else if (TheEffect == ShadowsInteriorsEffect) ShadowsInteriorsEffect = nullptr;
 
 	if (TheEffect) delete TheEffect;
 
 }
 
 void ShaderManager::RenderEffects(IDirect3DSurface9* RenderTarget) {
-	
+
+	ZoneScoped;
+
 	SettingsMainStruct::EffectsStruct* Effects = &TheSettingManager->SettingsMain.Effects;
 	IDirect3DDevice9* Device = TheRenderManager->device;
 	TESWorldSpace* currentWorldSpace = Player->GetWorldSpace();
@@ -1916,14 +1944,14 @@ void ShaderManager::RenderEffects(IDirect3DSurface9* RenderTarget) {
 	TheRenderManager->SetupSceneCamera();
 	Device->SetStreamSource(0, EffectVertex, 0, sizeof(EffectQuad));
 	Device->SetFVF(EFFECTQUADFORMAT);
-	Device->StretchRect(RenderTarget, NULL, RenderedSurface, NULL, D3DTEXF_NONE);
+	Device->StretchRect(RenderTarget, nullptr, RenderedSurface, nullptr, D3DTEXF_NONE);
 	if (Effects->WetWorld && currentWorldSpace && ShaderConst.WetWorld.Data.x > 0.0f) {
-		Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		Device->StretchRect(RenderTarget, nullptr, SourceSurface, nullptr, D3DTEXF_NONE);
 		WetWorldEffect->SetCT();
 		WetWorldEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 	else if (Effects->SnowAccumulation && currentWorldSpace && ShaderConst.SnowAccumulation.Params.w > 0.0f) {
-		Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		Device->StretchRect(RenderTarget, nullptr, SourceSurface, nullptr, D3DTEXF_NONE);
 		SnowAccumulationEffect->SetCT();
 		SnowAccumulationEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
@@ -1940,7 +1968,7 @@ void ShaderManager::RenderEffects(IDirect3DSurface9* RenderTarget) {
 		ColoringEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 	if (Effects->Bloom) {
-		Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		Device->StretchRect(RenderTarget, nullptr, SourceSurface, nullptr, D3DTEXF_NONE);
 		BloomEffect->SetCT();
 		BloomEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
@@ -1969,12 +1997,12 @@ void ShaderManager::RenderEffects(IDirect3DSurface9* RenderTarget) {
 			}
 		}
 		if (Effects->AmbientOcclusion && ShaderConst.AmbientOcclusion.Enabled) {
-			Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+			Device->StretchRect(RenderTarget, nullptr, SourceSurface, nullptr, D3DTEXF_NONE);
 			AmbientOcclusionEffect->SetCT();
 			AmbientOcclusionEffect->Render(Device, RenderTarget, RenderedSurface, false);
 		}
 		if (Effects->GodRays && currentWorldSpace) {
-			Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+			Device->StretchRect(RenderTarget, nullptr, SourceSurface, nullptr, D3DTEXF_NONE);
 			GodRaysEffect->SetCT();
 			GodRaysEffect->Render(Device, RenderTarget, RenderedSurface, false);
 		}
@@ -1984,7 +2012,7 @@ void ShaderManager::RenderEffects(IDirect3DSurface9* RenderTarget) {
 		}
 	}
 	if (Effects->DepthOfField && ShaderConst.DepthOfField.Enabled) {
-		Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		Device->StretchRect(RenderTarget, nullptr, SourceSurface, nullptr, D3DTEXF_NONE);
 		DepthOfFieldEffect->SetCT();
 		DepthOfFieldEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
@@ -2011,7 +2039,7 @@ void ShaderManager::RenderEffects(IDirect3DSurface9* RenderTarget) {
 	if (Effects->Extra) {
 		for (ExtraEffectsList::iterator iter = ExtraEffects.begin(); iter != ExtraEffects.end(); ++iter) {
 			if (iter->second->Enabled) {
-				Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+				Device->StretchRect(RenderTarget, nullptr, SourceSurface, nullptr, D3DTEXF_NONE);
 				iter->second->SetCT();
 				iter->second->Render(Device, RenderTarget, RenderedSurface, false);
 			}
@@ -2022,17 +2050,17 @@ void ShaderManager::RenderEffects(IDirect3DSurface9* RenderTarget) {
 		CinemaEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 	if (Effects->SMAA) {
-		Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		Device->StretchRect(RenderTarget, nullptr, SourceSurface, nullptr, D3DTEXF_NONE);
 		Device->SetRenderTarget(0, RenderSurfaceSMAA);
 		SMAAEffect->SetCT();
 		SMAAEffect->Render(Device, RenderSurfaceSMAA, RenderedSurface, true);
-		Device->StretchRect(RenderSurfaceSMAA, NULL, RenderTarget, NULL, D3DTEXF_NONE);
+		Device->StretchRect(RenderSurfaceSMAA, nullptr, RenderTarget, nullptr, D3DTEXF_NONE);
 		Device->SetRenderTarget(0, RenderTarget);
 	}
 	if (TheKeyboardManager->OnKeyDown(TheSettingManager->SettingsMain.Main.ScreenshotKey)) {
 		char Filename[MAX_PATH];
 		char Name[80];
-		time_t CurrentTime = time(NULL);
+		time_t CurrentTime = time(nullptr);
 
 		strcpy(Filename, TheSettingManager->SettingsMain.Main.ScreenshotPath);
 		strcat(Filename, ScreenshotFilenamePrefix);
@@ -2042,15 +2070,17 @@ void ShaderManager::RenderEffects(IDirect3DSurface9* RenderTarget) {
 			strcat(Filename, ".bmp");
 		else
 			strcat(Filename, ".jpg");
-		if (GetFileAttributesA(TheSettingManager->SettingsMain.Main.ScreenshotPath) == INVALID_FILE_ATTRIBUTES) CreateDirectoryA(TheSettingManager->SettingsMain.Main.ScreenshotPath, NULL);
-		D3DXSaveSurfaceToFileA(Filename, (D3DXIMAGE_FILEFORMAT)TheSettingManager->SettingsMain.Main.ScreenshotType, RenderTarget, NULL, NULL);
+		if (GetFileAttributesA(TheSettingManager->SettingsMain.Main.ScreenshotPath) == INVALID_FILE_ATTRIBUTES) CreateDirectoryA(TheSettingManager->SettingsMain.Main.ScreenshotPath, nullptr);
+		D3DXSaveSurfaceToFileA(Filename, (D3DXIMAGE_FILEFORMAT)TheSettingManager->SettingsMain.Main.ScreenshotType, RenderTarget, nullptr, nullptr);
 		MenuManager->ShowMessage("Screenshot taken!");
 	}
 
 }
 
 void ShaderManager::SwitchShaderStatus(const char* Name) {
-	
+
+	ZoneScoped;
+
 	SettingsMainStruct::EffectsStruct* Effects = &TheSettingManager->SettingsMain.Effects;
 	SettingsMainStruct::ShadersStruct* Shaders = &TheSettingManager->SettingsMain.Shaders;
 
