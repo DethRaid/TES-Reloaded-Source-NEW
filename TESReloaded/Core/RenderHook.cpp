@@ -1,6 +1,8 @@
 #include <CommCtrl.h>
 #include "RenderHook.h"
 
+#include "../Extern/tracy/Tracy.hpp"
+
 #if defined(NEWVEGAS)
 #define kRender 0x008706B0
 #define kProcessImageSpaceShaders 0x00B55AC0
@@ -107,6 +109,8 @@ bool (__thiscall RenderHook::* BeginScene)();
 bool (__thiscall RenderHook::* TrackBeginScene)();
 bool RenderHook::TrackBeginScene() {
 
+	FrameMark;
+
 	TheShaderManager->BeginScene();
 	return (this->*BeginScene)();
 
@@ -115,7 +119,7 @@ bool RenderHook::TrackBeginScene() {
 void (__thiscall RenderHook::* Render)(BSRenderedTexture*, int, int);
 void (__thiscall RenderHook::* TrackRender)(BSRenderedTexture*, int, int);
 void RenderHook::TrackRender(BSRenderedTexture* RenderedTexture, int Arg2, int Arg3) {
-	
+		
 	TheRenderManager->SetSceneGraph();
 	TheShaderManager->UpdateConstants();
 	if (TheSettingManager->SettingsMain.Develop.TraceShaders && *RenderWindowNode == NULL && TheKeyboardManager->OnKeyDown(TheSettingManager->SettingsMain.Develop.TraceShaders) && MenuManager->IsActive(Menu::MenuType::kMenuType_None)) {

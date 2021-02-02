@@ -1,5 +1,7 @@
 #include <fstream>
 #include <ctime>
+
+#include "../Extern/tracy/Tracy.hpp"
 #define EFFECTQUADFORMAT D3DFVF_XYZ | D3DFVF_TEX1
 
 #if defined(NEWVEGAS)
@@ -241,7 +243,8 @@ ShaderRecord::~ShaderRecord() {
 }
 
 bool ShaderRecord::LoadShader(const char* Name) {
-  
+	ZoneScoped;
+	
 	char FileName[MAX_PATH];
 	char FileNameBinary[MAX_PATH];
 	
@@ -289,19 +292,23 @@ bool ShaderRecord::LoadShader(const char* Name) {
 	strcat(FileName, ".hlsl");
 	std::ifstream FileSource(FileName, std::ios::in | std::ios::binary | std::ios::ate);
 	if (FileSource.is_open()) {
-		std::streampos size = FileSource.tellg();
-		Source = new char[size];
-		FileSource.seekg(0, std::ios::beg);
-		FileSource.read(Source, size);
-		FileSource.close();
-		if (strstr(Name, ".vso"))
+		if (strstr(Name, ".vso")) {
 			Type = ShaderType_Vertex;
-		else if (strstr(Name, ".pso"))
+		}
+		else if (strstr(Name, ".pso")) {
 			Type = ShaderType_Pixel;
+		}
 		if (TheSettingManager->SettingsMain.Develop.CompileShaders) {
-			D3DXCompileShaderFromFileA(FileName, NULL, NULL, "main", (Type == ShaderType_Vertex ? "vs_3_0" : "ps_3_0"), NULL, &Shader, &Errors, &Table);
-			if (Errors) Logger::Log((char*)Errors->GetBufferPointer());
+			ZoneScopedN("D3DXCompileShaderFromFileA");
+			HRESULT result = D3DXCompileShaderFromFileA(FileName, NULL, NULL, "main", (Type == ShaderType_Vertex ? "vs_3_0" : "ps_3_0"), NULL, &Shader, &Errors, &Table);
+			if(FAILED(result)) {
+				Logger::Log("Could not compile shader %s: Error code %#0x", FileName, result);
+			}
+			if (Errors) {
+				Logger::Log((char*)Errors->GetBufferPointer());
+			}
 			if (Shader) {
+				ZoneScopedN("Save compiled shader");
 				std::ofstream FileBinary(FileNameBinary, std::ios::out|std::ios::binary);
 				FileBinary.write((char*)Shader->GetBufferPointer(), Shader->GetBufferSize());
 				FileBinary.flush();
@@ -312,7 +319,8 @@ bool ShaderRecord::LoadShader(const char* Name) {
 		else {
 			std::ifstream FileBinary(FileNameBinary, std::ios::in | std::ios::binary | std::ios::ate);
 			if (FileBinary.is_open()) {
-				size = FileBinary.tellg();
+
+				std::streampos size = FileBinary.tellg();
 				D3DXCreateBuffer(size, &Shader);
 				FileBinary.seekg(0, std::ios::beg);
 				void* pShaderBuffer = Shader->GetBufferPointer();
@@ -330,6 +338,9 @@ bool ShaderRecord::LoadShader(const char* Name) {
 			Logger::Log("Shader loaded: %s", FileNameBinary);
 			return true;
 		}
+	}
+	else {
+		Logger::Log("Unable to read shader file %s", FileName);
 	}
 	return false;
 }
@@ -448,12 +459,18 @@ bool EffectRecord::LoadEffect(const char* Name) {
 			Compiled = false;
 			ID3DXEffectCompiler* Compiler = NULL;
 			ID3DXBuffer* EffectBuffer = NULL;
-			D3DXCreateEffectCompilerFromFileA(FileName, NULL, NULL, NULL, &Compiler, &Errors);
-			if (Errors) Logger::Log((char*)Errors->GetBufferPointer());
+			const auto result = D3DXCreateEffectCompilerFromFileA(FileName, NULL, NULL, NULL, &Compiler, &Errors);
+			if(FAILED(result)) {
+				Logger::Log("Could not create effect compiler from file %s", FileName);
+			}
+
+			if (Errors) { Logger::Log((char*)Errors->GetBufferPointer()); }
+
 			if (Compiler) {
 				Compiler->CompileEffect(NULL, &EffectBuffer, &Errors);
 				if (Errors) Logger::Log((char*)Errors->GetBufferPointer());
 			}
+
 			if (EffectBuffer) {
 				std::ofstream FileBinary(Name, std::ios::out | std::ios::binary);
 				FileBinary.write((char*)EffectBuffer->GetBufferPointer(), EffectBuffer->GetBufferSize());
@@ -462,8 +479,14 @@ bool EffectRecord::LoadEffect(const char* Name) {
 				Compiled = true;
 				Logger::Log("Effect compiled: %s", FileName);
 			}
-			if (EffectBuffer) EffectBuffer->Release();
-			if (Compiler) Compiler->Release();
+
+			if (EffectBuffer) {
+				EffectBuffer->Release();
+			}
+
+			if (Compiler) {
+				Compiler->Release();
+			}
 		}
 		if (Compiled) {
 			D3DXCreateEffectFromFileA(TheRenderManager->device, Name, NULL, NULL, NULL, NULL, &Effect, &Errors);
