@@ -18,6 +18,9 @@
     <Filter Include="Framework\Bink">
       <UniqueIdentifier>{9e2fcff0-833a-455b-8c3b-e44a4b683e20}</UniqueIdentifier>
     </Filter>
+    <Filter Include="External">
+      <UniqueIdentifier>{27392033-1606-4c78-a9b7-bfa72615c767}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\TESReloaded\Core\CameraMode.h">
@@ -134,6 +137,9 @@
     <ClInclude Include="..\TESReloaded\Framework\Bink\binktextures.h">
       <Filter>Framework\Bink</Filter>
     </ClInclude>
+    <ClInclude Include="..\TESReloaded\Extern\tracy\Tracy.hpp">
+      <Filter>External</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\TESReloaded\Core\CameraMode.cpp">
@@ -237,6 +243,9 @@
     </ClCompile>
     <ClCompile Include="..\TESReloaded\Framework\Bink\binktextures.cpp">
       <Filter>Framework\Bink</Filter>
+    </ClCompile>
+    <ClCompile Include="..\TESReloaded\Extern\tracy\TracyClient.cpp">
+      <Filter>External</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
