@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <Tracy.hpp>
 #if defined(NEWVEGAS)
 #define RenderStateArgs 0, 0
 #define kRockParams 0x01200658
@@ -43,7 +44,9 @@ static const void* VFTNiTriStrips = (void*)0x00A7F27C;
 
 #if defined(NEWVEGAS) || defined(OBLIVION)
 ShadowManager::ShadowManager() {
-	
+
+	ZoneScoped;
+
 	Logger::Log("Starting the shadows manager...");
 	TheShadowManager = this;
 	
@@ -240,6 +243,8 @@ void ShadowManager::RenderObject(NiAVObject* Object, bool HasWater) {
 }
 
 void ShadowManager::Render(NiGeometry* Geo) {
+
+	ZoneScoped;
 	
 	IDirect3DDevice9* Device = TheRenderManager->device;
 	NiDX9RenderState* RenderState = TheRenderManager->renderState;
@@ -362,7 +367,9 @@ void ShadowManager::Render(NiGeometry* Geo) {
 }
 
 void ShadowManager::RenderShadowMap(ShadowMapTypeEnum ShadowMapType, SettingsShadowStruct::ExteriorsStruct* ShadowsExteriors, D3DXVECTOR3* At, D3DXVECTOR4* SunDir) {
-	
+
+	ZoneScoped;
+
 	IDirect3DDevice9* Device = TheRenderManager->device;
 	NiDX9RenderState* RenderState = TheRenderManager->renderState;
 	float FarPlane = ShadowsExteriors->ShadowMapFarPlane;
@@ -423,6 +430,8 @@ void ShadowManager::RenderShadowMap(ShadowMapTypeEnum ShadowMapType, SettingsSha
 }
 
 void ShadowManager::RenderShadowCubeMap(NiPointLight** Lights, int LightIndex, SettingsShadowStruct::InteriorsStruct* ShadowsInteriors) {
+
+	ZoneScoped;
 
 	IDirect3DDevice9* Device = TheRenderManager->device;
 	NiDX9RenderState* RenderState = TheRenderManager->renderState;
@@ -516,7 +525,9 @@ void ShadowManager::RenderShadowCubeMap(NiPointLight** Lights, int LightIndex, S
 }
 
 void ShadowManager::RenderShadowMaps() {
-	
+
+	ZoneScoped;
+
 	SettingsMainStruct::EquipmentModeStruct* EquipmentModeSettings = &TheSettingManager->SettingsMain.EquipmentMode;
 	SettingsShadowStruct::ExteriorsStruct* ShadowsExteriors = &TheSettingManager->SettingsShadows.Exteriors;
 	SettingsShadowStruct::InteriorsStruct* ShadowsInteriors = &TheSettingManager->SettingsShadows.Interiors;
@@ -671,6 +682,9 @@ void ShadowManager::CalculateBlend(NiPointLight** Lights, int LightIndex) {
 }
 
 void ShadowManager::CreateShadowTexture(int Index, SettingsShadowStruct::ExteriorsStruct* ShadowsExteriors, IDirect3DDevice9* Device) {
+
+	ZoneScoped;
+
 	const UINT ShadowMapSize = ShadowsExteriors->ShadowMapSize[Index];
 
 	// Depth texture
