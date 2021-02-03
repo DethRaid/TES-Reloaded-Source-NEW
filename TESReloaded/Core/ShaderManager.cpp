@@ -289,31 +289,30 @@ bool ShaderRecord::LoadShader(const char* Name) {
 	strcat(FileName, ".hlsl");
 	std::ifstream FileSource(FileName, std::ios::in | std::ios::binary | std::ios::ate);
 	if (FileSource.is_open()) {
-		std::streampos size = FileSource.tellg();
-		Source = new char[size];
-		FileSource.seekg(0, std::ios::beg);
-		FileSource.read(Source, size);
-		FileSource.close();
-		if (strstr(Name, ".vso"))
+		if (strstr(Name, ".vso")) {
 			Type = ShaderType_Vertex;
-		else if (strstr(Name, ".pso"))
+		}
+		else if (strstr(Name, ".pso")) {
 			Type = ShaderType_Pixel;
+		}
 		if (TheSettingManager->SettingsMain.Develop.CompileShaders) {
 			Logger::Log("Compiling shader %s...", FileName);
 			D3DXCompileShaderFromFileA(FileName, NULL, NULL, "main", (Type == ShaderType_Vertex ? "vs_3_0" : "ps_3_0"), NULL, &Shader, &Errors, &Table);
-			if (Errors) Logger::Log((char*)Errors->GetBufferPointer());
+			if (Errors) {
+				Logger::Log("%s", (char*)Errors->GetBufferPointer());
+			}
 			if (Shader) {
 				std::ofstream FileBinary(FileNameBinary, std::ios::out|std::ios::binary);
 				FileBinary.write((char*)Shader->GetBufferPointer(), Shader->GetBufferSize());
 				FileBinary.flush();
 				FileBinary.close();
-				Logger::Log("Shader compiled: %s", FileName);
+				Logger::Log("Shader compiled successfully");
 			}
 		}
 		else {
 			std::ifstream FileBinary(FileNameBinary, std::ios::in | std::ios::binary | std::ios::ate);
 			if (FileBinary.is_open()) {
-				size = FileBinary.tellg();
+				std::streampos size = FileBinary.tellg();
 				D3DXCreateBuffer(size, &Shader);
 				FileBinary.seekg(0, std::ios::beg);
 				void* pShaderBuffer = Shader->GetBufferPointer();
